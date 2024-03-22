@@ -17,7 +17,11 @@ class PolarBareDB:
         self.__tempfiles = []
 
     def query(
-        self, sql: str, parameters: Optional[list] = None, batch_size: int = 250_000
+        self,
+        sql: str,
+        parameters: Optional[list] = None,
+        batch_size: int = 250_000,
+        return_values: bool = True,
     ) -> Optional[DataFrame]:
         """
         Leverages internal connection to query against Postgres instance
@@ -36,7 +40,7 @@ class PolarBareDB:
                 cursor.execute(query=sql, params=parameters)
 
                 # If no results, return without raising exeption
-                if not cursor.description:
+                if not cursor.description or not return_values:
                     return None
 
                 ###
