@@ -1,0 +1,3 @@
+polars
+google-cloud-bigquery
+psycopg

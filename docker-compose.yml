@@ -1,0 +1,7 @@
+services:
+  polar_bear_db:
+    build:
+      dockerfile: ./Dockerfile
+    volumes:
+      - .:/app/
+    entrypoint: sleep infinity
