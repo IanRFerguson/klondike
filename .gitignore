@@ -1,0 +1,7 @@
+### FILE TYPES
+*ipynb*
+*.pyc
+
+### DIRECTORIES
+venv/
+.vscode/
