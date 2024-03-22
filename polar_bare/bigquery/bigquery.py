@@ -7,8 +7,16 @@ from polar_bare.pbear.generic_db import PolarBareDB
 
 ##########
 
+SCOPES = (
+    {
+        "scopes": [
+            "https://www.googleapis.com/auth/bigquery",
+        ]
+    },
+)
 
-class BigQuery(PolarBareDB):
+
+class PolarBigQuery(PolarBareDB):
     """
     TODO - Fill me in
     """
@@ -18,11 +26,7 @@ class BigQuery(PolarBareDB):
         app_creds: Optional[Union[str, dict]] = None,
         gcp_project: Optional[str] = None,
         timeout: int = 60,
-        scopes: dict = {
-            "scopes": [
-                "https://www.googleapis.com/auth/bigquery",
-            ]
-        },
+        scopes: dict = SCOPES,
         google_environment_variable: str = "GOOGLE_APPLICATION_CREDENTIALS",
     ):
         self.app_creds = app_creds
