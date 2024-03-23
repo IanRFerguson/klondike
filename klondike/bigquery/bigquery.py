@@ -28,22 +28,30 @@ class BigQueryConnector:
     def __init__(
         self,
         app_creds: Optional[Union[str, dict]] = None,
-        gcp_project: Optional[str] = None,
+        project: Optional[str] = None,
         timeout: int = 60,
         client_options: dict = SCOPES,
         google_environment_variable: str = "GOOGLE_APPLICATION_CREDENTIALS",
     ):
         self.app_creds = app_creds
-        self.gcp_project = gcp_project
+        self.project = project
         self.timeout = timeout
         self.client_options = client_options
 
         self._client = None
         self.dialect = "bigquery"
 
-        self.__setup_google_app_creds(
-            app_creds=app_creds, env_variable=google_environment_variable
-        )
+        if not self.app_creds:
+            if not os.environ.get(google_environment_variable):
+                raise OSError("No app_creds provided")
+            else:
+                logger.info(
+                    f"Using `{google_environment_variable}` variable defined in environment"
+                )
+        else:
+            self.__setup_google_app_creds(
+                app_creds=self.app_creds, env_variable=google_environment_variable
+            )
 
     def __setup_google_app_creds(self, app_creds: Union[str, dict], env_variable: str):
         """
