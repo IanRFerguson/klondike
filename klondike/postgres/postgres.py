@@ -4,7 +4,7 @@ from typing import Union
 
 import psycopg
 
-from polar_bare.pbear.generic_db import PolarBareDB
+from klondike.base.generic_db import PolarBareDB
 
 ##########
 

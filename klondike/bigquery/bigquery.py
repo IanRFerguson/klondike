@@ -4,7 +4,7 @@ from typing import Optional, Union
 from google.cloud import bigquery
 from google.cloud.bigquery import dbapi
 
-from polar_bare.pbear.generic_db import PolarBareDB
+from klondike.base.generic_db import PolarBareDB
 import json
 import os
 import tempfile
