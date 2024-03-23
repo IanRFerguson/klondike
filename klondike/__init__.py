@@ -25,9 +25,6 @@ else:
 __all__ = []
 POLAR_OBJECTS = [
     ("klondike.bigquery.bigquery", "PolarBigQuery"),
-    ("klondike.postgres.postgres", "PolarPostgres"),
-    ("klondike.redshift.redshift", "PolarRedshift"),
-    ("klondike.snowflake.snowflake", "PolarSnowflake"),
 ]
 
 for module_, object_ in POLAR_OBJECTS:
