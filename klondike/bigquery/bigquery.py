@@ -4,7 +4,7 @@ from typing import Optional, Union
 from google.cloud import bigquery
 from google.cloud.bigquery import dbapi
 
-from klondike.base.generic_db import PolarBareDB
+from klondike.base.generic_db import KlondikeDB
 import json
 import os
 import tempfile
@@ -20,7 +20,7 @@ SCOPES = (
 )
 
 
-class PolarBigQuery(PolarBareDB):
+class PolarBigQuery(KlondikeDB):
     """
     Establish and authenticate a connection to a BigQuery warehouse
     """

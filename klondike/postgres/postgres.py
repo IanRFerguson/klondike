@@ -4,12 +4,12 @@ from typing import Union
 
 import psycopg
 
-from klondike.base.generic_db import PolarBareDB
+from klondike.base.generic_db import KlondikeDB
 
 ##########
 
 
-class PolarPostgres(PolarBareDB):
+class PolarPostgres(KlondikeDB):
     """
     Establish and authenticate a connection to a Postgres instance.
 

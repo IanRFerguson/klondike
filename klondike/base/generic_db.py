@@ -4,20 +4,33 @@ from typing import Optional
 
 import petl
 from polars import DataFrame
+from contextlib import contextmanager
 
 ##########
 
 
-class PolarBareDB:
+class KlondikeDB:
     """
     Abstract class with shared utilities across all database instances
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        vars(self).update(kwargs=kwargs)
+
+        self.dialect = None
         self.__tempfiles = []
 
+    @contextmanager
+    def connection(self):
+        """Placeholder function"""
+        return
+
     def query(
-        self, sql: str, parameters: Optional[list] = None, batch_size: int = 250_000
+        self,
+        sql: str,
+        parameters: Optional[list] = None,
+        batch_size: int = 250_000,
+        return_values: bool = True,
     ) -> Optional[DataFrame]:
         """
         Leverages internal connection to query against Postgres instance
@@ -36,7 +49,7 @@ class PolarBareDB:
                 cursor.execute(query=sql, params=parameters)
 
                 # If no results, return without raising exeption
-                if not cursor.description:
+                if not cursor.description or not return_values:
                     return None
 
                 ###
