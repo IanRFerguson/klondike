@@ -24,7 +24,7 @@ else:
 
 __all__ = []
 POLAR_OBJECTS = [
-    ("klondike.bigquery.bigquery", "PolarBigQuery"),
+    ("klondike.bigquery.bigquery", "BigQueryConnector"),
 ]
 
 for module_, object_ in POLAR_OBJECTS:
