@@ -7,6 +7,7 @@ from typing import Optional, Union
 import polars as pl
 from google.cloud import bigquery
 from google.cloud.bigquery import LoadJobConfig
+
 from klondike import logger
 
 ##########
@@ -17,7 +18,7 @@ SCOPES = (
             "https://www.googleapis.com/auth/bigquery",
         ]
     },
-)
+)[0]
 
 
 class BigQueryConnector:
@@ -29,12 +30,14 @@ class BigQueryConnector:
         self,
         app_creds: Optional[Union[str, dict]] = None,
         project: Optional[str] = None,
+        location: Optional[str] = None,
         timeout: int = 60,
         client_options: dict = SCOPES,
         google_environment_variable: str = "GOOGLE_APPLICATION_CREDENTIALS",
     ):
         self.app_creds = app_creds
         self.project = project
+        self.location = location
         self.timeout = timeout
         self.client_options = client_options
 
@@ -163,9 +166,13 @@ class BigQueryConnector:
         # Execute and wait for results
         result = query_job.result()
 
+        if not result:
+            logger.info("Nothing to see here! No results to return")
+            return
+
         # Populate DataFrame using PyArrow
         df = pl.from_arrow(result.to_arrow())
-        logger.info(f"Successfully read {len(df)} from BigQuery")
+        logger.info(f"Successfully read {len(df)} rows from BigQuery")
 
         return df
 
@@ -189,7 +196,8 @@ class BigQueryConnector:
             max_bad_records: Tolerance for bad records in the load job, defaults to 0
             table_schema: List of column names, types, and optional flags to include
             if_exists: One of `fail`, `drop`, `append`, `truncate`
-            load_kwargs: See here for list of accepted values - https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.job.LoadJobConfig #noqa
+            load_kwargs: See here for list of accepted values
+                https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.job.LoadJobConfig
         """
 
         if if_exists == "drop":

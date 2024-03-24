@@ -2,7 +2,7 @@
 
 <img src="https://upload.wikimedia.org/wikipedia/en/d/d5/Klondike_logo.svg">
 
-Klondike offers a lightweight API to read and write data to Google BigQuery using rust-optimized Polars DataFrames.
+Klondike offers a lightweight API to read and write data to Google BigQuery using Polars DataFrames.
 
 ## Installation
 
