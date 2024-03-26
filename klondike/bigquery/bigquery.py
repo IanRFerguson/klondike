@@ -24,6 +24,14 @@ SCOPES = (
 class BigQueryConnector:
     """
     Establish and authenticate a connection to a BigQuery warehouse
+
+    Args:
+        app_creds: Google service account, either as a relative path or a dictionary instance
+        project: Name of Google Project
+        location: Location of Google Project
+        timeout: Temporal threshold to kill a stalled job, defaults to 60s
+        client_options: API scopes
+        google_environment_variable: Provided for flexibility, defaults to `GOOGLE_APPLICATION_CREDENTIALS`
     """
 
     def __init__(
@@ -57,9 +65,7 @@ class BigQueryConnector:
             )
 
     def __setup_google_app_creds(self, app_creds: Union[str, dict], env_variable: str):
-        """
-        Sets runtime environment variablefor Google SDK
-        """
+        "Sets runtime environment variable for Google SDK"
 
         if isinstance(app_creds, dict):
             creds = json.dumps(app_creds)
@@ -122,9 +128,13 @@ class BigQueryConnector:
         return base_job_config
 
     def __set_table_schema(self, table_schema: list):
+        "TODO - Write about me"
+
         return [bigquery.SchemaField(**x) for x in table_schema]
 
     def __set_write_disposition(self, if_exists: str):
+        "TODO - Write about me"
+
         DISPOSITION_MAP = {
             "fail": bigquery.WriteDisposition.WRITE_EMPTY,
             "append": bigquery.WriteDisposition.WRITE_APPEND,
@@ -150,10 +160,11 @@ class BigQueryConnector:
 
     def read_dataframe_from_bigquery(self, sql: str) -> pl.DataFrame:
         """
-        Executes a SQL query and returns a Polars DataFrame
+        Executes a SQL query and returns a Polars DataFrame.
+        TODO - Make this more flexible and incorporate query params
 
         Args:
-            sql:
+            sql: String representation of SQL query
 
         Returns:
             Polars DataFrame object
@@ -166,14 +177,14 @@ class BigQueryConnector:
         # Execute and wait for results
         result = query_job.result()
 
-        if not result:
-            logger.info("Nothing to see here! No results to return")
-            return
-
         # Populate DataFrame using PyArrow
         df = pl.from_arrow(result.to_arrow())
-        logger.info(f"Successfully read {len(df)} rows from BigQuery")
 
+        if df.is_empty():
+            logger.info("No results returned from SQL call")
+            return
+
+        logger.info(f"Successfully read {len(df)} rows from BigQuery")
         return df
 
     def write_dataframe_to_bigquery(

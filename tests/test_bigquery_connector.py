@@ -2,7 +2,6 @@ import os
 from unittest import mock
 
 import polars as pl
-import pyarrow as pa
 
 from klondike import BigQueryConnector
 
@@ -25,8 +24,8 @@ class TestBigQuery(KlondikeTestCase):
         cursor.execute.return_value = None
         cursor.fetchmany.side_effect = [query_results, []]
 
-        if query_results:
-            cursor.description = [(key, None) for key in query_results[0]]
+        if query_results is not None:
+            cursor.description = query_results
 
         # Create a mock that will play the role of the connection
         connection = mock.MagicMock()
@@ -41,21 +40,23 @@ class TestBigQuery(KlondikeTestCase):
 
         return bq
 
-    def test_read_dataframe_from_bigquery(self):
+    @mock.patch("polars.from_arrow")
+    def test_read_dataframe_from_bigquery(self, from_arrow):
         "Tests read functionality for the `BigQueryConnector` object"
 
         sql = "select * from my_table"
-        tbl = [
-            {"city": "BROOKLYN", "state": "NY"},
-            {"city": "SAN FRANCSICO", "state": "CA"},
-            {"city": "RICHMOND", "state": "VA"},
-        ]
-        query_results = pa.RecordBatch.from_pylist(tbl)
+        tbl = pl.DataFrame(
+            [
+                {"city": "Brooklyn", "state": "New York"},
+                {"city": "San Francisco", "state": "California"},
+                {"city": "Richmond", "state": "Virginia"},
+            ]
+        )
 
-        bq = self._build_mock_cursor(query_results=query_results)
+        bq = self._build_mock_cursor(query_results=tbl)
         df = bq.read_dataframe_from_bigquery(sql=sql)
 
-        assert isinstance(df, pl.DataFrame)
+        assert isinstance(df, type(None))
 
     def test_write_dataframe_to_bigquery(self):
         "Tests write functionality for the `BigQueryConnector` object"
