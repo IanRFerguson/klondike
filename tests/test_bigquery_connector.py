@@ -41,7 +41,7 @@ class TestBigQuery(KlondikeTestCase):
         return bq
 
     @mock.patch("polars.from_arrow")
-    def test_read_dataframe_from_bigquery(self, from_arrow):
+    def test_read_dataframe_from_bigquery(self, mock_from_arrow):
         "Tests read functionality for the `BigQueryConnector` object"
 
         sql = "select * from my_table"
@@ -58,6 +58,12 @@ class TestBigQuery(KlondikeTestCase):
 
         assert isinstance(df, type(None))
 
-    def test_write_dataframe_to_bigquery(self):
+    @mock.patch("polars.DataFrame.write_parquet")
+    def test_write_dataframe_to_bigquery(self, mock_write_parquet):
         "Tests write functionality for the `BigQueryConnector` object"
-        pass
+
+        df = mock.MagicMock()
+        table_name = "foo.bar"
+
+        bq = self._build_mock_cursor()
+        bq.write_dataframe_to_bigquery(df=df, table_name=table_name)
