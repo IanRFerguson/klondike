@@ -25,6 +25,28 @@ First, connect to the BigQuery warehouse by supplying the `BigQueryConnector()` 
 
 Next, supply the object with a SQL query in the `read_dataframe_from_bigquery()` function to redner a `DataFrame` object:
 
+```
+from klondike import BigQueryConnector
+
+# Connect Klondike to Google BigQuery
+bq = BigQueryConnector(
+    app_creds="dev/nba-player-service.json"
+)
+
+
+# Write some valid SQL
+sql = """
+SELECT
+    *
+FROM nba_dbt.cln_player__averages
+ORDER BY avg_points DESC
+"""
+
+
+# Pull BigQuery data into a Polars DataFrame
+nyk = bq.read_dataframe_from_bigquery(sql=sql)
+```
+
 <img src="./.demo/stepOne.png">
 
 Now that your data is pulled into a local instance, you can clean and transform it using standard Polars functionality - [see the docs](https://docs.pola.rs/py-polars/html/reference/dataframe/index.html) for more information.
