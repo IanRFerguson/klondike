@@ -23,8 +23,6 @@ In this demo we'll connect to BigQuery, read data, transform it, and write it ba
 
 First, connect to the BigQuery warehouse by supplying the `BigQueryConnector()` object with the relative path to your service account credentials.
 
-Next, supply the object with a SQL query in the `read_dataframe_from_bigquery()` function to redner a `DataFrame` object:
-
 ```
 from klondike import BigQueryConnector
 
@@ -32,8 +30,11 @@ from klondike import BigQueryConnector
 bq = BigQueryConnector(
     app_creds="dev/nba-player-service.json"
 )
+```
 
+Next, supply the object with a SQL query in the `read_dataframe_from_bigquery()` function to redner a `DataFrame` object:
 
+```
 # Write some valid SQL
 sql = """
 SELECT
@@ -47,12 +48,26 @@ ORDER BY avg_points DESC
 nyk = bq.read_dataframe_from_bigquery(sql=sql)
 ```
 
-<img src="./.demo/stepOne.png">
-
 Now that your data is pulled into a local instance, you can clean and transform it using standard Polars functionality - [see the docs](https://docs.pola.rs/py-polars/html/reference/dataframe/index.html) for more information.
 
-<img src="./.demo/stepTwo.png">
+```
+# Perform some transformations
+key_metrics = [
+    "avg_offensive_rating",
+    "avg_defensive_rating",
+    "avg_effective_field_goal_percentage"
+]
+
+summary_stats = nyk[key_metrics].describe()
+```
 
 Finally, push your transformed data back to the BigQuery warehouse using the `write_dataframe_to_bigquery()` function:
 
-<img src="./.demo/stepThree.png">
+```
+# Write back to BigQuery
+bq.write_dataframe_to_bigquery(
+    df=summary_stats,
+    table_name="nba_dbt.summary_statistics",
+    if_exists="truncate"
+)
+```
