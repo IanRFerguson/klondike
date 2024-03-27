@@ -14,11 +14,11 @@ def main():
 
     setuptools.setup(
         name="klondike",
-        version="0.0.1",
+        version="0.0.2",
         author="Ian Richard Ferguson",
         author_email="IRF229@nyu.edu",
         url="https://github.com/IanRFerguson/klondike",
-        keywords=["PROGRESSIVE", "API", "ETL"],
+        keywords=["API", "ETL", "BIGQUERY"],
         packages=setuptools.find_packages(),
         install_requires=INSTALL_REQUIRES,
         classifiers=[
