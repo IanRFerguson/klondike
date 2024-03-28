@@ -14,7 +14,7 @@ def main():
 
     setuptools.setup(
         name="klondike",
-        version="0.0.2",
+        version="0.1.0",
         author="Ian Richard Ferguson",
         author_email="IRF229@nyu.edu",
         url="https://github.com/IanRFerguson/klondike",
