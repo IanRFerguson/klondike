@@ -10,7 +10,7 @@ Klondike offers a lightweight API to read and write data to Google BigQuery usin
 Install at the command line
 
 ```
-pip install klondike==0.1.0
+pip install klondike
 ```
 
 ### Installing Rust
