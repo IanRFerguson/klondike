@@ -15,6 +15,7 @@ def main():
     setuptools.setup(
         name="klondike",
         version="0.1.0",
+        description="Lightweight data warehouse client, powered by Polars",
         author="Ian Richard Ferguson",
         author_email="IRF229@nyu.edu",
         url="https://github.com/IanRFerguson/klondike",
