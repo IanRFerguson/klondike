@@ -25,6 +25,7 @@ else:
 __all__ = []
 POLAR_OBJECTS = [
     ("klondike.bigquery.bigquery", "BigQueryConnector"),
+    ("klondike.snowflake.snowflake", "SnowflakeConnector"),
 ]
 
 for module_, object_ in POLAR_OBJECTS:
