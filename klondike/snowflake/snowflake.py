@@ -45,6 +45,8 @@ class SnowflakeConnector:
         self.snowflake_account = snowflake_account
         self.__snowflake_warehouse = snowflake_warehouse
         self.__snowflake_database = snowflake_database
+
+        self.dialect = "snowflake"
         self.__row_chunk_size = row_chunk_size
 
     @property
@@ -114,6 +116,7 @@ class SnowflakeConnector:
 
         with self.connection() as _conn:
             with self.cursor(_conn) as _cursor:
+                # TODO - Ugly! Clean this up
                 _cursor.execute(f"USE DATABASE {self.snowflake_database};")
                 _cursor.execute(f"USE WAREHOUSE {self.snowflake_warehouse};")
                 _cursor.execute(sql)
@@ -159,7 +162,13 @@ class SnowflakeConnector:
             Polars DataFrame object
         """
 
-        return self.__query(sql=sql)
+        # Execute SQL against warehouse
+        logger.debug("Running SQL...", sql)
+        df = self.__query(sql=sql)
+
+        logger.info(f"Successfully read {len(df)} rows from Snowflake")
+
+        return df
 
     def write_dataframe(
         self,
@@ -219,8 +228,8 @@ class SnowflakeConnector:
 
         ###
 
-        logger.debug(
-            f"Attempting to write to {self.snowflake_database}.{schema_name}.{table_name}..."
+        logger.info(
+            f"Writing to {self.snowflake_database}.{schema_name}.{table_name}..."
         )
         with self.connection() as conn:
             resp, num_chunks, num_rows, output = write_pandas(
