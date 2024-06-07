@@ -1,6 +1,7 @@
-import setuptools
 import os
 import pathlib
+
+import setuptools
 
 ##########
 
@@ -14,11 +15,11 @@ def main():
 
     setuptools.setup(
         name="klondike",
-        version="0.1.0",
+        version="0.2.0",
         author="Ian Richard Ferguson",
         author_email="IRF229@nyu.edu",
         url="https://github.com/IanRFerguson/klondike",
-        keywords=["API", "ETL", "BIGQUERY"],
+        keywords=["API", "ETL", "BIGQUERY", "SNOWFLAKE"],
         packages=setuptools.find_packages(),
         install_requires=INSTALL_REQUIRES,
         classifiers=[
