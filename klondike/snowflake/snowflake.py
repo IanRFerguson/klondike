@@ -123,7 +123,15 @@ class SnowflakeConnector:
                 _cursor.execute(sql)
                 _resp = _cursor.fetch_arrow_batches()
 
-        return pl.from_arrow(_resp)
+        try:
+            return pl.from_arrow(_resp)
+        except ValueError as ve:
+            # NOTE - This appears to be Polars response to empty fetch_arrow_batches()
+            # This should be interrogated more, but is functional
+            if "Must pass schema, or at least one RecordBatch" in str(ve):
+                logger.debug("No results obtained via query")
+                return pl.DataFrame()
+            raise
 
     def read_dataframe(self, sql: str) -> pl.DataFrame:
         """
