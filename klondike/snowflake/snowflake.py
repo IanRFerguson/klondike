@@ -1,5 +1,6 @@
 import os
 from contextlib import contextmanager
+from typing import Optional
 
 import polars as pl
 import snowflake.connector as snow
@@ -124,31 +125,6 @@ class SnowflakeConnector:
 
         return pl.from_arrow(_resp)
 
-    def table_exists(self, schema_name: str, table_name: str) -> bool:
-        """
-        Determines if a Snowflake table exists in the warehouse
-
-        Args:
-            schema_name: `str`
-                Target schema name
-            table_name: `str`
-                Target table name
-
-        Returns:
-            True if the table exists, False otherwise
-        """
-
-        sql = f"""
-        SELECT
-            *
-        FROM INFORMATION_SCHEMA.TABLES
-        WHERE table_schema = '{schema_name}' AND table_name = '{table_name}'
-        """
-
-        resp = self.__query(sql=sql)
-
-        return not resp.is_empty()
-
     def read_dataframe(self, sql: str) -> pl.DataFrame:
         """
         Executes a SQL query against the Snowflake warehouse
@@ -175,6 +151,7 @@ class SnowflakeConnector:
         df: pl.DataFrame,
         table_name: str,
         schema_name: str,
+        database_name: Optional[str] = None,
         if_exists: str = "append",
         auto_create_table: bool = True,
         chunk_output: bool = False,
@@ -194,6 +171,8 @@ class SnowflakeConnector:
                 Destination database name
             schema_name: `str`
                 Destination schema name
+            database: `str`
+                Optional Snowflake database (defaults to preset class attribute)
             if_exists: `str`
                 One of `append`, `truncate`, `drop`, `fail`
             auto_create_table: `bool`
@@ -226,6 +205,8 @@ class SnowflakeConnector:
             if self.table_exists(schema_name=schema_name, table_name=table_name):
                 raise snow.errors.DatabaseError(f"{table_name} already exists")
 
+        database = database_name if database_name else self.snowflake_database
+
         ###
 
         logger.info(
@@ -235,7 +216,7 @@ class SnowflakeConnector:
             resp, num_chunks, num_rows, output = write_pandas(
                 conn=conn,
                 df=df.to_pandas(),
-                database=self.snowflake_database,
+                database=database,
                 schema=schema_name,
                 table_name=table_name,
                 auto_create_table=auto_create_table,
@@ -250,3 +231,69 @@ class SnowflakeConnector:
         else:
             logger.error(f"Failed to write to {table_name}", resp)
             raise
+
+    def table_exists(
+        self, table_name: str, database_name: Optional[str] = None
+    ) -> bool:
+        """
+        Determines if a Snowflake table exists in the warehouse
+
+        Args:
+            table_name: `str`
+                Snowflake table name in `schema.table` format
+
+        Returns:
+            True if the table exists, False otherwise
+        """
+
+        schema, table = table_name.split(".")
+
+        if not database_name:
+            logger.debug(f"Defaulting to default database [{self.snowflake_database}]")
+            database_name = self.snowflake_database
+
+        sql = f"""
+        SELECT
+            *
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE table_schema = '{schema}'
+            AND table_name = '{table}'
+            AND table_catalog = '{database_name}'
+        """
+
+        resp = self.__query(sql=sql)
+
+        return not resp.is_empty()
+
+    def list_tables(
+        self, schema_name: str, database_name: Optional[str] = None
+    ) -> list:
+        """
+        Gets a list of available tables in a Snowflake schema
+
+        Args:
+            schema_name: `str`
+            database_name: `str`
+
+        Returns:
+            List of table names
+        """
+
+        if not database_name:
+            database_name = self.snowflake_database
+
+        sql = f"""
+        SELECT
+            table_catalog,
+            table_schema,
+            table_name
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE table_schema = '{schema_name}'
+            AND table_catalog = '{database_name}'
+        """
+
+        resp = self.__query(sql=sql)
+
+        resp = resp.select(table_name=pl.concat_str(resp.columns, separator="."))
+
+        return pl.Series(resp["table_name"]).to_list()

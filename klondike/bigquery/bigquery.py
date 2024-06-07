@@ -7,6 +7,7 @@ from typing import Optional, Union
 import polars as pl
 from google.cloud import bigquery
 from google.cloud.bigquery import LoadJobConfig
+from google.cloud.exceptions import NotFound
 
 from klondike import logger
 from klondike.utilities.utilities import validate_if_exists_behavior
@@ -216,14 +217,21 @@ class BigQueryConnector:
         Writes a Polars DataFrame to BigQuery
 
         Args:
-            df: Polars DataFrame
-            table_name: Destination table name to write to - `dataset.table` convention
-            load_job_config: `LoadJobConfig` object. If none is supplied, several defaults are applied
-            max_bad_records: Tolerance for bad records in the load job, defaults to 0
-            table_schema: List of column names, types, and optional flags to include
-            if_exists: One of `fail`, `drop`, `append`, `truncate`
-            load_kwargs: See here for list of accepted values
-                https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.job.LoadJobConfig
+            df: `polars.DataFrame`
+                DataFrame to write to BigQuery
+            table_name: `str`
+                Destination table name to write to - `dataset.table` convention
+            load_job_config: `LoadJobConfig`
+                Configures load job; if none is supplied, several defaults are applied
+            max_bad_records: `int`
+                Tolerance for bad records in the load job, defaults to 0
+            table_schema: `list`
+                List of column names, types, and optional flags to include
+            if_exists: `str`
+                One of `fail`, `drop`, `append`, `truncate`
+            load_kwargs:
+                See here for list of accepted values \
+                    https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.job.LoadJobConfig
         """
 
         if not validate_if_exists_behavior(user_input=if_exists):
@@ -251,3 +259,36 @@ class BigQueryConnector:
 
         load_job.result()
         logger.info(f"Successfuly wrote {len(df)} rows to {table_name}")
+
+    def table_exists(self, table_name: str) -> bool:
+        """
+        Determines if a BigQuery table exists
+
+        Args:
+            table_name: `str`
+                BigQuery table name in `schema.table` or `project.schema.table` format
+        """
+
+        try:
+            _ = self.client.get_table(table=table_name)
+            return True
+
+        except NotFound:
+            return False
+
+    def list_tables(self, schema_name: str) -> list:
+        """
+        Gets a list of available tables in a BigQuery schema
+
+        Args:
+            schema_name: `str`
+                BigQuery schema name
+
+        Returns:
+            List of table names
+        """
+
+        return [
+            x.full_table_id.replace(":", ".")
+            for x in self.client.list_tables(dataset=schema_name)
+        ]
