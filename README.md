@@ -19,7 +19,7 @@ Since Polars leverages Rust speedups, you need to have Rust installed in your en
 
 ## Usage
 
-In this demo we'll connect to BigQuery, read data, transform it, and write it back to the data warehouse.
+In this demo we'll connect to Google BigQuery, read data, transform it, and write it back to the data warehouse.
 
 First, connect to the BigQuery warehouse by supplying the `BigQueryConnector()` object with the relative path to your service account credentials.
 
@@ -32,7 +32,7 @@ bq = BigQueryConnector(
 )
 ```
 
-Next, supply the object with a SQL query in the `read_dataframe_from_bigquery()` function to redner a `DataFrame` object:
+Next, supply the object with a SQL query in the `read_dataframe()` function to redner a `DataFrame` object:
 
 ```
 # Write some valid SQL
@@ -45,7 +45,7 @@ ORDER BY avg_points DESC
 
 
 # Pull BigQuery data into a Polars DataFrame
-nyk = bq.read_dataframe_from_bigquery(sql=sql)
+nyk = bq.read_dataframe(sql=sql)
 ```
 
 Now that your data is pulled into a local instance, you can clean and transform it using standard Polars functionality - [see the docs](https://docs.pola.rs/py-polars/html/reference/dataframe/index.html) for more information.
@@ -61,11 +61,11 @@ key_metrics = [
 summary_stats = nyk[key_metrics].describe()
 ```
 
-Finally, push your transformed data back to the BigQuery warehouse using the `write_dataframe_to_bigquery()` function:
+Finally, push your transformed data back to the BigQuery warehouse using the `write_dataframe()` function:
 
 ```
 # Write back to BigQuery
-bq.write_dataframe_to_bigquery(
+bq.write_dataframe(
     df=summary_stats,
     table_name="nba_dbt.summary_statistics",
     if_exists="truncate"

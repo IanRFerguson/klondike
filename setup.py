@@ -19,7 +19,7 @@ def main():
         author="Ian Richard Ferguson",
         author_email="IRF229@nyu.edu",
         url="https://github.com/IanRFerguson/klondike",
-        keywords=["API", "ETL", "BIGQUERY"],
+        keywords=["API", "ETL", "BIGQUERY", "SNOWFLAKE"],
         packages=setuptools.find_packages(),
         install_requires=INSTALL_REQUIRES,
         classifiers=[
