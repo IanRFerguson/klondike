@@ -40,6 +40,10 @@ class BigQueryConnector:
             API scopes
         google_environment_variable: `str`
             Provided for flexibility, defaults to `GOOGLE_APPLICATION_CREDENTIALS`
+        bypass_env_variable: `bool`
+            If True, no exception will raise when the `GOOGLE_APPLICATION_CREDENTIALS` env
+            variable is missing. This is helpful when running in a GCP environment that doesn't
+            explicitly set the environment this way
     """
 
     def __init__(
@@ -50,6 +54,7 @@ class BigQueryConnector:
         timeout: int = 60,
         client_options: dict = SCOPES,
         google_environment_variable: str = "GOOGLE_APPLICATION_CREDENTIALS",
+        bypass_env_variable: bool = False,
     ):
         self.app_creds = app_creds
         self.project = project
@@ -61,12 +66,22 @@ class BigQueryConnector:
         self.__timeout = timeout
 
         if not self.app_creds:
-            if not os.environ.get(google_environment_variable):
+            if (
+                not os.environ.get(google_environment_variable)
+                and not bypass_env_variable
+            ):
                 raise OSError("No app_creds provided")
+
+            elif bypass_env_variable:
+                logger.info(
+                    f"Bypassing env variable requirements `{google_environment_variable}` not found in environment"
+                )
+
             else:
                 logger.info(
                     f"Using `{google_environment_variable}` variable defined in environment"
                 )
+
         else:
             self.__setup_google_app_creds(
                 app_creds=self.app_creds, env_variable=google_environment_variable
