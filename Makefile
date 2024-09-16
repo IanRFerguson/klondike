@@ -4,3 +4,6 @@ push:
 
 setup:
 	@bash run_setup.sh
+
+test:
+	@cd tests && pytest -rf -W ignore::DeprecationWarning .
