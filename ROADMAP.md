@@ -1,7 +1,7 @@
 # Klondike Product Roadmap
 
 ## Code Quality
-- [ ] Move formatting and linting to Ruff
+- [x] Move formatting and linting to Ruff
 - [ ] PyTests written
 - [ ] PyTests passing
 - [ ] PyTests integrated into checks
