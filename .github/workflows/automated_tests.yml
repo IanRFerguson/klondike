@@ -26,6 +26,8 @@ jobs:
     - name: Setup Python environment
       if: steps.changed-python-files.outputs.any_changed == 'true'
       uses: actions/setup-python@v3
+      with:
+          python-version: "3.10"
 
     - name: Installs
       if: steps.changed-python-files.outputs.any_changed == 'true'
@@ -47,6 +49,8 @@ jobs:
 
       - name: Setup Python environment
         uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
 
       - name: Run Unit Tests
         run: |
