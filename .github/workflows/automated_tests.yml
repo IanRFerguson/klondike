@@ -50,7 +50,7 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          pip install --upgrade pip
+          pip install --upgrade pip cmake
           
           pip install -r requirements.txt
           
