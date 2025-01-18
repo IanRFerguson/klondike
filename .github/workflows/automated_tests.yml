@@ -7,7 +7,7 @@ on:
     branches: "*"
 
 jobs:
-  check_linting_and_formatting: 
+  ruff: 
     runs-on: macos-latest
     steps:
 
@@ -37,7 +37,7 @@ jobs:
       run: |
         ruff check --output-format=github .
 
-  run_unit_tests:
+  unit_tests:
     runs-on: macos-latest
     steps:
       - name: Checkout branch
@@ -50,6 +50,9 @@ jobs:
 
       - name: Run Unit Tests
         run: |
+          pip install --upgrade pip
+          
           pip install -r requirements.txt
+          
           pip install pytest
           pytest -rf tests/*
