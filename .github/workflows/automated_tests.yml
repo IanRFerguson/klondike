@@ -64,4 +64,5 @@ jobs:
           poetry install --no-root
 
       - name: Run Unit Tests
-        run: python -m pytest -rf tests/*
+        run: |
+          poetry run pytest -rf tests/*
