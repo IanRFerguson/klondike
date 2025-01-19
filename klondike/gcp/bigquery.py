@@ -10,6 +10,7 @@ from google.cloud.bigquery import LoadJobConfig
 from google.cloud.exceptions import NotFound
 
 from klondike import logger
+from klondike.base.abc_klondike import KlondikeBaseDBConnector
 from klondike.utilities.utilities import validate_if_exists_behavior
 
 ##########
@@ -23,7 +24,7 @@ SCOPES = (
 )[0]
 
 
-class BigQueryConnector:
+class BigQueryConnector(KlondikeBaseDBConnector):
     """
     Establish and authenticate a connection to a BigQuery warehouse
 
@@ -66,10 +67,7 @@ class BigQueryConnector:
         self.__timeout = timeout
 
         if not self.app_creds:
-            if (
-                not os.environ.get(google_environment_variable)
-                and not bypass_env_variable
-            ):
+            if not os.environ.get(google_environment_variable) and not bypass_env_variable:
                 raise OSError("No app_creds provided")
 
             elif bypass_env_variable:
@@ -78,14 +76,10 @@ class BigQueryConnector:
                 )
 
             else:
-                logger.info(
-                    f"Using `{google_environment_variable}` variable defined in environment"
-                )
+                logger.info(f"Using `{google_environment_variable}` variable defined in environment")
 
         else:
-            self.__setup_google_app_creds(
-                app_creds=self.app_creds, env_variable=google_environment_variable
-            )
+            self.__setup_google_app_creds(app_creds=self.app_creds, env_variable=google_environment_variable)
 
     @property
     def client(self):
@@ -268,9 +262,7 @@ class BigQueryConnector:
         with io.BytesIO() as stream_:
             df.write_parquet(stream_)
             stream_.seek(0)
-            load_job = self.client.load_table_from_file(
-                stream_, destination=table_name, job_config=load_job_config
-            )
+            load_job = self.client.load_table_from_file(stream_, destination=table_name, job_config=load_job_config)
 
         load_job.result()
         logger.info(f"Successfuly wrote {len(df)} rows to {table_name}")
@@ -303,7 +295,7 @@ class BigQueryConnector:
             List of table names
         """
 
-        return [
-            x.full_table_id.replace(":", ".")
-            for x in self.client.list_tables(dataset=schema_name)
-        ]
+        return [x.full_table_id.replace(":", ".") for x in self.client.list_tables(dataset=schema_name)]
+
+    def query(self):
+        pass

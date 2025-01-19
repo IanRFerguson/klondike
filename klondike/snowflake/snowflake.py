@@ -3,21 +3,22 @@ from contextlib import contextmanager
 from typing import Optional
 
 import polars as pl
-import snowflake.connector as snow
+import snowflake.connector as sf
 from snowflake.connector.pandas_tools import write_pandas
 
 from klondike import logger
+from klondike.base.abc_klondike import KlondikeBaseDBConnector
 from klondike.utilities.utilities import validate_if_exists_behavior
 
 ##########
 
 
-class SnowflakeConnector:
+class SnowflakeConnector(KlondikeBaseDBConnector):
     """
     Leverages connection to Snowflake to read and write Polars DataFrame
     objects to the data warehouse
 
-    `Args`:
+    Args:
         snowflake_user: `str`
             Username to connect to Snowflake (defaults to `SNOWFLAKE_USER` in environment)
         snowflake_password: `str`
@@ -47,27 +48,11 @@ class SnowflakeConnector:
         will be raised
         """
 
-        self.snowflake_user = (
-            snowflake_user if snowflake_user else os.getenv("SNOWFLAKE_USER")
-        )
-        self.snowflake_password = (
-            snowflake_password
-            if snowflake_password
-            else os.getenv("SNOWFLAKE_PASSWORD")
-        )
-        self.snowflake_account = (
-            snowflake_account if snowflake_account else os.getenv("SNOWFLAKE_ACCOUNT")
-        )
-        self.__snowflake_warehouse = (
-            snowflake_warehouse
-            if snowflake_warehouse
-            else os.getenv("SNOWFLAKE_WAREHOUSE")
-        )
-        self.__snowflake_database = (
-            snowflake_database
-            if snowflake_database
-            else os.getenv("SNOWFLAKE_DATABASE")
-        )
+        self.snowflake_user = snowflake_user if snowflake_user else os.getenv("SNOWFLAKE_USER")
+        self.snowflake_password = snowflake_password if snowflake_password else os.getenv("SNOWFLAKE_PASSWORD")
+        self.snowflake_account = snowflake_account if snowflake_account else os.getenv("SNOWFLAKE_ACCOUNT")
+        self.__snowflake_warehouse = snowflake_warehouse if snowflake_warehouse else os.getenv("SNOWFLAKE_WAREHOUSE")
+        self.__snowflake_database = snowflake_database if snowflake_database else os.getenv("SNOWFLAKE_DATABASE")
 
         ###
 
@@ -76,7 +61,7 @@ class SnowflakeConnector:
         ###
 
         self.dialect = "snowflake"
-        self.__row_chunk_size = row_chunk_size
+        self.row_chunk_size = row_chunk_size
 
     def __validate_authentication(self):
         _auth_vals = [
@@ -122,7 +107,7 @@ class SnowflakeConnector:
         Creates a connection to Snowflake
         """
 
-        conn = snow.connect(
+        conn = sf.connect(
             account=self.snowflake_account,
             warehouse=self.snowflake_warehouse,
             user=self.snowflake_user,
@@ -148,7 +133,7 @@ class SnowflakeConnector:
         finally:
             cur.close()
 
-    def __query(self, sql: str):
+    def query(self, sql: str):
         """
         Executes SQL command against Snowflake warehouse
 
@@ -190,7 +175,7 @@ class SnowflakeConnector:
 
         # Execute SQL against warehouse
         logger.debug("Running SQL...", sql)
-        df = self.__query(sql=sql)
+        df = self.query(sql=sql)
 
         logger.info(f"Successfully read {len(df)} rows from Snowflake")
 
@@ -253,15 +238,13 @@ class SnowflakeConnector:
 
         elif if_exists == "fail":
             if self.table_exists(schema_name=schema_name, table_name=table_name):
-                raise snow.errors.DatabaseError(f"{table_name} already exists")
+                raise sf.errors.DatabaseError(f"{table_name} already exists")
 
         database = database_name if database_name else self.snowflake_database
 
         ###
 
-        logger.info(
-            f"Writing to {self.snowflake_database}.{schema_name}.{table_name}..."
-        )
+        logger.info(f"Writing to {self.snowflake_database}.{schema_name}.{table_name}...")
         with self.connection() as conn:
             resp, num_chunks, num_rows, output = write_pandas(
                 conn=conn,
@@ -282,9 +265,7 @@ class SnowflakeConnector:
             logger.error(f"Failed to write to {table_name}", resp)
             raise
 
-    def table_exists(
-        self, table_name: str, database_name: Optional[str] = None
-    ) -> bool:
+    def table_exists(self, table_name: str, database_name: Optional[str] = None) -> bool:
         """
         Determines if a Snowflake table exists in the warehouse
 
@@ -311,13 +292,11 @@ class SnowflakeConnector:
             AND table_catalog = '{database_name}'
         """
 
-        resp = self.__query(sql=sql)
+        resp = self.query(sql=sql)
 
         return not resp.is_empty()
 
-    def list_tables(
-        self, schema_name: str, database_name: Optional[str] = None
-    ) -> list:
+    def list_tables(self, schema_name: str, database_name: Optional[str] = None) -> list:
         """
         Gets a list of available tables in a Snowflake schema
 
@@ -342,7 +321,7 @@ class SnowflakeConnector:
             AND table_catalog = '{database_name}'
         """
 
-        resp = self.__query(sql=sql)
+        resp = self.query(sql=sql)
 
         resp = resp.select(table_name=pl.concat_str(resp.columns, separator="."))
 
