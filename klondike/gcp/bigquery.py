@@ -10,6 +10,7 @@ from google.cloud.bigquery import LoadJobConfig
 from google.cloud.exceptions import NotFound
 
 from klondike import logger
+from klondike.base.abc_klondike import KlondikeBaseDBConnector
 from klondike.utilities.utilities import validate_if_exists_behavior
 
 ##########
@@ -23,7 +24,7 @@ SCOPES = (
 )[0]
 
 
-class BigQueryConnector:
+class BigQueryConnector(KlondikeBaseDBConnector):
     """
     Establish and authenticate a connection to a BigQuery warehouse
 
@@ -61,7 +62,7 @@ class BigQueryConnector:
         self.location = location
         self.client_options = client_options
 
-        self.dialect = "bigquery"
+        self.__dialect = "bigquery"
         self.__client = None
         self.__timeout = timeout
 
@@ -86,6 +87,10 @@ class BigQueryConnector:
             self.__setup_google_app_creds(
                 app_creds=self.app_creds, env_variable=google_environment_variable
             )
+
+    @property
+    def dialect(self):
+        return self.__dialect
 
     @property
     def client(self):
@@ -189,8 +194,7 @@ class BigQueryConnector:
 
     def read_dataframe(self, sql: str) -> pl.DataFrame:
         """
-        Executes a SQL query and returns a Polars DataFrame.
-        TODO - Make this more flexible and incorporate query params
+        Reads a Polars DataFrame based on a SQL query
 
         Args:
             sql: `str`
@@ -200,21 +204,7 @@ class BigQueryConnector:
             Polars DataFrame object
         """
 
-        # Define query job
-        logger.debug("Running SQL...", sql)
-        query_job = self.client.query(query=sql, timeout=self.timeout)
-
-        # Execute and wait for results
-        result = query_job.result()
-
-        # Populate DataFrame using PyArrow
-        df = pl.from_arrow(result.to_arrow())
-
-        if df.is_empty():
-            logger.info("No results returned from SQL call")
-            return
-
-        logger.info(f"Successfully read {len(df)} rows from BigQuery")
+        df = self.query(sql=sql, return_results=True)
 
         return df
 
@@ -307,3 +297,47 @@ class BigQueryConnector:
             x.full_table_id.replace(":", ".")
             for x in self.client.list_tables(dataset=schema_name)
         ]
+
+    def query(
+        self, sql: str, timeout: Optional[int] = None, return_results: bool = True
+    ) -> pl.DataFrame:
+        """
+        Executes a SQL query and returns a Polars DataFrame.
+
+        TODO - Make this more flexible and incorporate query params
+
+        Args:
+            sql: `str`
+                String representation of SQL query
+
+        Returns:
+            Polars DataFrame object
+        """
+
+        if not timeout:
+            timeout = self.timeout
+
+        logger.debug("Running SQL...", sql)
+
+        # Establish query job against BigQuery API
+        query_job = self.client.query(query=sql, timeout=timeout)
+
+        # Wait for query to finish
+        result = query_job.result()
+
+        # Read as arrow stream into Polars DataFrame
+        df = pl.from_arrow(result.to_arrow())
+
+        # Query yielded no results
+        if df.is_empty():
+            logger.warning("No results returned")
+            return pl.DataFrame()
+
+        # Intended for DDL calls (adding columns, creating views, etc.)
+        elif not return_results:
+            return
+
+        # Query returned results
+        else:
+            logger.info(f"Successfully read {len(df)} rows from BigQuery")
+            return df

@@ -3,21 +3,22 @@ from contextlib import contextmanager
 from typing import Optional
 
 import polars as pl
-import snowflake.connector as snow
+import snowflake.connector as sf
 from snowflake.connector.pandas_tools import write_pandas
 
 from klondike import logger
+from klondike.base.abc_klondike import KlondikeBaseDBConnector
 from klondike.utilities.utilities import validate_if_exists_behavior
 
 ##########
 
 
-class SnowflakeConnector:
+class SnowflakeConnector(KlondikeBaseDBConnector):
     """
     Leverages connection to Snowflake to read and write Polars DataFrame
     objects to the data warehouse
 
-    `Args`:
+    Args:
         snowflake_user: `str`
             Username to connect to Snowflake (defaults to `SNOWFLAKE_USER` in environment)
         snowflake_password: `str`
@@ -75,8 +76,8 @@ class SnowflakeConnector:
 
         ###
 
-        self.dialect = "snowflake"
-        self.__row_chunk_size = row_chunk_size
+        self.__dialect = "snowflake"
+        self.row_chunk_size = row_chunk_size
 
     def __validate_authentication(self):
         _auth_vals = [
@@ -91,6 +92,10 @@ class SnowflakeConnector:
             raise ValueError(
                 "Missing authentication values! Make sure all `snowflake_*` values are provided at construction"
             )
+
+    @property
+    def dialect(self):
+        return self.__dialect
 
     @property
     def snowflake_warehouse(self):
@@ -122,7 +127,7 @@ class SnowflakeConnector:
         Creates a connection to Snowflake
         """
 
-        conn = snow.connect(
+        conn = sf.connect(
             account=self.snowflake_account,
             warehouse=self.snowflake_warehouse,
             user=self.snowflake_user,
@@ -148,7 +153,7 @@ class SnowflakeConnector:
         finally:
             cur.close()
 
-    def __query(self, sql: str):
+    def query(self, sql: str):
         """
         Executes SQL command against Snowflake warehouse
 
@@ -190,7 +195,7 @@ class SnowflakeConnector:
 
         # Execute SQL against warehouse
         logger.debug("Running SQL...", sql)
-        df = self.__query(sql=sql)
+        df = self.query(sql=sql)
 
         logger.info(f"Successfully read {len(df)} rows from Snowflake")
 
@@ -253,7 +258,7 @@ class SnowflakeConnector:
 
         elif if_exists == "fail":
             if self.table_exists(schema_name=schema_name, table_name=table_name):
-                raise snow.errors.DatabaseError(f"{table_name} already exists")
+                raise sf.errors.DatabaseError(f"{table_name} already exists")
 
         database = database_name if database_name else self.snowflake_database
 
@@ -311,7 +316,7 @@ class SnowflakeConnector:
             AND table_catalog = '{database_name}'
         """
 
-        resp = self.__query(sql=sql)
+        resp = self.query(sql=sql)
 
         return not resp.is_empty()
 
@@ -342,7 +347,7 @@ class SnowflakeConnector:
             AND table_catalog = '{database_name}'
         """
 
-        resp = self.__query(sql=sql)
+        resp = self.query(sql=sql)
 
         resp = resp.select(table_name=pl.concat_str(resp.columns, separator="."))
 
