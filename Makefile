@@ -4,3 +4,7 @@ push:
 
 setup:
 	@bash run_setup.sh
+
+clean:
+	@ruff check --fix .
+	@pytest -rf tests/*
