@@ -52,11 +52,16 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Run Unit Tests
+      - name: Installs
         run: |
-          pip install --upgrade pip cmake
-          
-          pip install -r requirements.txt
-          
-          pip install pytest
-          pytest -rf tests/*
+          # Install Poetry
+          curl -sSL https://install.python-poetry.org | python3 -
+
+          # Update PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+          # Install dependencies
+          poetry install --no-root
+
+      - name: Run Unit Tests
+        run: pytest -rf tests/*
