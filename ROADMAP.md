@@ -2,9 +2,15 @@
 
 ## Code Quality
 - [x] Move formatting and linting to Ruff
-- [ ] PyTests written
-- [ ] PyTests passing
-- [ ] PyTests integrated into checks
+- [x] BigQuery PyTests written
+- [x] BigQuery PyTests passing
+- [x] Snowflake PyTests written
+- [x] Snowflake PyTests passing
+- [ ] Postgres PyTests written
+- [ ] Postgres PyTests passing
+- [ ] Redshift PyTests written
+- [ ] Redshift PyTests passing
+- [x] PyTests integrated into checks
 
 ## Klondike Offerings
 - [ ] Redshift Connector

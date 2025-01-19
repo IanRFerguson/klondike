@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import polars as pl
 
 from klondike.gcp.bigquery import BigQueryConnector
+from tests.common.tests_common import MOCK_DATAFRAME_RESP
 
 ##########
 
@@ -33,13 +34,6 @@ class TestBigQueryConnector(unittest.TestCase):
         bq = BigQueryConnector(bypass_env_variable=True)
 
         assert isinstance(bq, BigQueryConnector)
-
-    def test_query(self):
-        """
-        Test for direct query against BigQuery warehouse
-        """
-
-        pass
 
     @patch("klondike.gcp.bigquery.bigquery.Client")
     def test_table_exists(self, MockBigQueryClient):
@@ -103,11 +97,13 @@ class TestBigQueryConnector(unittest.TestCase):
         mock_bq_client.list_tables.assert_called_once_with(dataset="test_schema")
 
         # Assert that table IDs are returned correctly
-        self.assertEqual([x.split(".")[-1] for x in table_values], ["table_1", "table_2", "table_3"])
+        self.assertEqual(
+            [x.split(".")[-1] for x in table_values], ["table_1", "table_2", "table_3"]
+        )
 
     @patch("klondike.gcp.bigquery.bigquery.Client")
     @patch("polars.from_arrow")
-    def test_read_dataframe__no_results(self, MockPolarsObject, MockBigQueryClient):
+    def test_query__no_results(self, MockPolarsObject, MockBigQueryClient):
         """
         Test for read_dataframe method with no results returned
         """
@@ -119,15 +115,17 @@ class TestBigQueryConnector(unittest.TestCase):
         MockPolarsObject.return_value = mock_polars
 
         bq = BigQueryConnector(app_creds={"foo": "bar"})
-        resp = bq.read_dataframe("select * from schema.table;")
+        resp = bq.query("select * from schema.table;")
 
-        mock_bq_client.query.assert_called_once_with(query="select * from schema.table;", timeout=bq.timeout)
+        mock_bq_client.query.assert_called_once_with(
+            query="select * from schema.table;", timeout=bq.timeout
+        )
 
-        assert not resp
+        assert resp.is_empty()
 
     @patch("klondike.gcp.bigquery.bigquery.Client")
     @patch("polars.from_arrow")
-    def test_read_dataframe__valid_results(self, MockPolarsObject, MockBigQueryClient):
+    def test_query__valid_results(self, MockPolarsObject, MockBigQueryClient):
         """
         Test for read_dataframe method with valid results returned
         """
@@ -135,20 +133,15 @@ class TestBigQueryConnector(unittest.TestCase):
         mock_bq_client = MagicMock()
         MockBigQueryClient.return_value = mock_bq_client
 
-        mock_polars = pl.DataFrame(
-            [
-                {"name": "Ian", "city": "Brooklyn"},
-                {"name": "Spencer", "city": "Tysons"},
-                {"name": "Gavin", "city": "Arlington"},
-                {"name": "Zach", "city": "Harrisonburg"},
-            ]
-        )
+        mock_polars = MOCK_DATAFRAME_RESP
         MockPolarsObject.return_value = mock_polars
 
         bq = BigQueryConnector(app_creds={"foo": "bar"})
-        resp = bq.read_dataframe("select * from schema.table;")
+        resp = bq.query("select * from schema.table;")
 
-        mock_bq_client.query.assert_called_once_with(query="select * from schema.table;", timeout=bq.timeout)
+        mock_bq_client.query.assert_called_once_with(
+            query="select * from schema.table;", timeout=bq.timeout
+        )
 
         assert isinstance(resp, pl.DataFrame)
         assert "name" in resp.columns
@@ -168,14 +161,7 @@ class TestBigQueryConnector(unittest.TestCase):
         MockParquetStream.return_value = mock_parquet_stream
 
         bq = BigQueryConnector(app_creds={"foo": "bar"})
-        df = pl.DataFrame(
-            [
-                {"name": "Ian", "city": "Brooklyn"},
-                {"name": "Spencer", "city": "Tysons"},
-                {"name": "Gavin", "city": "Arlington"},
-                {"name": "Zach", "city": "Harrisonburg"},
-            ]
-        )
+        df = MOCK_DATAFRAME_RESP
 
         bq.write_dataframe(df=df, table_name="test.table")
 

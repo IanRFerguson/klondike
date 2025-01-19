@@ -48,11 +48,27 @@ class SnowflakeConnector(KlondikeBaseDBConnector):
         will be raised
         """
 
-        self.snowflake_user = snowflake_user if snowflake_user else os.getenv("SNOWFLAKE_USER")
-        self.snowflake_password = snowflake_password if snowflake_password else os.getenv("SNOWFLAKE_PASSWORD")
-        self.snowflake_account = snowflake_account if snowflake_account else os.getenv("SNOWFLAKE_ACCOUNT")
-        self.__snowflake_warehouse = snowflake_warehouse if snowflake_warehouse else os.getenv("SNOWFLAKE_WAREHOUSE")
-        self.__snowflake_database = snowflake_database if snowflake_database else os.getenv("SNOWFLAKE_DATABASE")
+        self.snowflake_user = (
+            snowflake_user if snowflake_user else os.getenv("SNOWFLAKE_USER")
+        )
+        self.snowflake_password = (
+            snowflake_password
+            if snowflake_password
+            else os.getenv("SNOWFLAKE_PASSWORD")
+        )
+        self.snowflake_account = (
+            snowflake_account if snowflake_account else os.getenv("SNOWFLAKE_ACCOUNT")
+        )
+        self.__snowflake_warehouse = (
+            snowflake_warehouse
+            if snowflake_warehouse
+            else os.getenv("SNOWFLAKE_WAREHOUSE")
+        )
+        self.__snowflake_database = (
+            snowflake_database
+            if snowflake_database
+            else os.getenv("SNOWFLAKE_DATABASE")
+        )
 
         ###
 
@@ -60,7 +76,7 @@ class SnowflakeConnector(KlondikeBaseDBConnector):
 
         ###
 
-        self.dialect = "snowflake"
+        self.__dialect = "snowflake"
         self.row_chunk_size = row_chunk_size
 
     def __validate_authentication(self):
@@ -76,6 +92,10 @@ class SnowflakeConnector(KlondikeBaseDBConnector):
             raise ValueError(
                 "Missing authentication values! Make sure all `snowflake_*` values are provided at construction"
             )
+
+    @property
+    def dialect(self):
+        return self.__dialect
 
     @property
     def snowflake_warehouse(self):
@@ -244,7 +264,9 @@ class SnowflakeConnector(KlondikeBaseDBConnector):
 
         ###
 
-        logger.info(f"Writing to {self.snowflake_database}.{schema_name}.{table_name}...")
+        logger.info(
+            f"Writing to {self.snowflake_database}.{schema_name}.{table_name}..."
+        )
         with self.connection() as conn:
             resp, num_chunks, num_rows, output = write_pandas(
                 conn=conn,
@@ -265,7 +287,9 @@ class SnowflakeConnector(KlondikeBaseDBConnector):
             logger.error(f"Failed to write to {table_name}", resp)
             raise
 
-    def table_exists(self, table_name: str, database_name: Optional[str] = None) -> bool:
+    def table_exists(
+        self, table_name: str, database_name: Optional[str] = None
+    ) -> bool:
         """
         Determines if a Snowflake table exists in the warehouse
 
@@ -296,7 +320,9 @@ class SnowflakeConnector(KlondikeBaseDBConnector):
 
         return not resp.is_empty()
 
-    def list_tables(self, schema_name: str, database_name: Optional[str] = None) -> list:
+    def list_tables(
+        self, schema_name: str, database_name: Optional[str] = None
+    ) -> list:
         """
         Gets a list of available tables in a Snowflake schema
 
