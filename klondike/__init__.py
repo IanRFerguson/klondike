@@ -7,6 +7,7 @@ POLAR_OBJECTS = [
     ("klondike.gcp.bigquery", "BigQueryConnector"),
     ("klondike.gcp.cloud_storage", "CloudStorageConnector"),
     ("klondike.snowflake.snowflake", "SnowflakeConnector"),
+    ("klondike.scripts.stream_csv_to_bigquery", "stream_csv_to_bigquery"),
 ]
 
 for module_, object_ in POLAR_OBJECTS:
