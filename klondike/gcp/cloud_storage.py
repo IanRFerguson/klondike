@@ -2,7 +2,7 @@ import os
 from typing import Any, List, Optional, Union
 
 import polars as pl
-from google.storage import Blob, Bucket, Client
+from google.cloud.storage import Client
 
 from klondike.base.abc_klondike import KlondikeBaseStorageConnector
 from klondike.utilities.logger import logger
@@ -44,7 +44,7 @@ class CloudStorageConnector(KlondikeBaseStorageConnector):
                 self._client = (
                     Client.from_service_account_info(self.app_creds)
                     if isinstance(self.app_creds, dict)
-                    else Client.from_service_account_file(self.app_creds)
+                    else Client.from_service_account_json(self.app_creds)
                 )
             elif (
                 not self.bypass_env_var_check
