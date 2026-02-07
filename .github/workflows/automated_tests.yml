@@ -1,68 +1,94 @@
-name: ci_cd_checks
+name: PR Checks
 
 on:
   pull_request:
-    branches: "*"
-  push:
-    branches: "*"
+    types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
-  ruff: 
-    runs-on: macos-latest
+  ruff-lint:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    
     steps:
-
-    - name: Checkout branch
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-
-    - name: Get changed files
-      id: changed-python-files
-      uses: tj-actions/changed-files@v41
-      with:
-        files: |
-          **.py
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      
+      - name: Install dependencies
+        run: uv sync
+      
+      - name: Run ruff linting
+        run: uv run ruff check .
   
-    - name: Setup Python environment
-      if: steps.changed-python-files.outputs.any_changed == 'true'
-      uses: actions/setup-python@v3
-      with:
-          python-version: "3.10"
-
-    - name: Installs
-      if: steps.changed-python-files.outputs.any_changed == 'true'
-      run: |
-        python -m pip install ruff
-
-    - name: Ruff
-      if: steps.changed-python-files.outputs.any_changed == 'true'
-      run: |
-        ruff check --output-format=github .
-
-  unit_tests:
-    runs-on: macos-latest
+  ruff-format:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout branch
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          fetch-depth: 0
-
-      - name: Setup Python environment
-        uses: actions/setup-python@v3
+          python-version: '3.12'
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      
+      - name: Install dependencies
+        run: uv sync
+      
+      - name: Run ruff formatting check
+        run: uv run ruff format --check .
+  
+  mypy:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
-
-      - name: Installs
-        run: |
-          # Install Poetry
-          curl -sSL https://install.python-poetry.org | python3 -
-
-          # Update PATH
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-          # Install dependencies
-          poetry install --no-root
-
-      - name: Run Unit Tests
-        run: |
-          poetry run pytest -rf tests/*
+          python-version: '3.12'
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      
+      - name: Install dependencies
+        run: uv sync
+      
+      - name: Run mypy type checking
+        run: uv run mypy klondike/
+  
+  pytest:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      
+      - name: Install dependencies
+        run: uv sync
+      
+      - name: Run pytest
+        run: uv run pytest -rf tests/
