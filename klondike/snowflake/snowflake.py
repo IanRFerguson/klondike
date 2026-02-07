@@ -8,9 +8,7 @@ from snowflake.connector.pandas_tools import write_pandas
 
 from klondike import logger
 from klondike.base.abc_klondike import KlondikeBaseDBConnector
-from klondike.utilities.utilities import validate_if_exists_behavior
-
-##########
+from klondike.utilities.utilities import get_env_or_value, validate_if_exists_behavior
 
 
 class SnowflakeConnector(KlondikeBaseDBConnector):
@@ -48,38 +46,26 @@ class SnowflakeConnector(KlondikeBaseDBConnector):
         will be raised
         """
 
-        self.snowflake_user = (
-            snowflake_user if snowflake_user else os.getenv("SNOWFLAKE_USER")
+        self.snowflake_user = get_env_or_value(snowflake_user, "SNOWFLAKE_USER")
+        self.snowflake_password = get_env_or_value(
+            snowflake_password, "SNOWFLAKE_PASSWORD"
         )
-        self.snowflake_password = (
-            snowflake_password
-            if snowflake_password
-            else os.getenv("SNOWFLAKE_PASSWORD")
+        self.snowflake_account = get_env_or_value(
+            snowflake_account, "SNOWFLAKE_ACCOUNT"
         )
-        self.snowflake_account = (
-            snowflake_account if snowflake_account else os.getenv("SNOWFLAKE_ACCOUNT")
+        self._snowflake_warehouse = get_env_or_value(
+            snowflake_warehouse, "SNOWFLAKE_WAREHOUSE"
         )
-        self.__snowflake_warehouse = (
-            snowflake_warehouse
-            if snowflake_warehouse
-            else os.getenv("SNOWFLAKE_WAREHOUSE")
-        )
-        self.__snowflake_database = (
-            snowflake_database
-            if snowflake_database
-            else os.getenv("SNOWFLAKE_DATABASE")
+        self._snowflake_database = get_env_or_value(
+            snowflake_database, "SNOWFLAKE_DATABASE"
         )
 
-        ###
+        self._validate_authentication()
 
-        self.__validate_authentication()
+        self._dialect = "snowflake"
+        self._row_chunk_size = row_chunk_size
 
-        ###
-
-        self.__dialect = "snowflake"
-        self.row_chunk_size = row_chunk_size
-
-    def __validate_authentication(self):
+    def _validate_authentication(self):
         _auth_vals = [
             self.snowflake_user,
             self.snowflake_password,
@@ -95,31 +81,31 @@ class SnowflakeConnector(KlondikeBaseDBConnector):
 
     @property
     def dialect(self):
-        return self.__dialect
+        return self._dialect
 
     @property
     def snowflake_warehouse(self):
-        return self.__snowflake_warehouse
+        return self._snowflake_warehouse
 
     @snowflake_warehouse.setter
     def snowflake_warehouse(self, warehouse):
-        self.__snowflake_warehouse = warehouse
+        self._snowflake_warehouse = warehouse
 
     @property
     def snowflake_database(self):
-        return self.__snowflake_database
+        return self._snowflake_database
 
     @snowflake_database.setter
     def snowflake_database(self, database):
-        self.__snowflake_database = database
+        self._snowflake_database = database
 
     @property
     def row_chunk_size(self):
-        return self.__row_chunk_size
+        return self._row_chunk_size
 
     @row_chunk_size.setter
     def row_chunk_size(self, row_chunk_size):
-        self.__row_chunk_size = row_chunk_size
+        self._row_chunk_size = row_chunk_size
 
     @contextmanager
     def connection(self):
@@ -164,7 +150,6 @@ class SnowflakeConnector(KlondikeBaseDBConnector):
 
         with self.connection() as _conn:
             with self.cursor(_conn) as _cursor:
-                # TODO - Ugly! Clean this up
                 _cursor.execute(f"USE DATABASE {self.snowflake_database};")
                 _cursor.execute(f"USE WAREHOUSE {self.snowflake_warehouse};")
                 _cursor.execute(sql)
@@ -262,8 +247,6 @@ class SnowflakeConnector(KlondikeBaseDBConnector):
 
         database = database_name if database_name else self.snowflake_database
 
-        ###
-
         logger.info(
             f"Writing to {self.snowflake_database}.{schema_name}.{table_name}..."
         )
@@ -278,8 +261,6 @@ class SnowflakeConnector(KlondikeBaseDBConnector):
                 chunk_size=row_chunks,
                 overwrite=overwrite,
             )
-
-        ###
 
         if resp:
             logger.info(f"Successfully wrote {num_rows} rows to {table_name}")

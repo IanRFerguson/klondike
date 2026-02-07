@@ -11,9 +11,7 @@ from google.cloud.exceptions import NotFound
 
 from klondike import logger
 from klondike.base.abc_klondike import KlondikeBaseDBConnector
-from klondike.utilities.utilities import validate_if_exists_behavior
-
-##########
+from klondike.utilities.utilities import get_env_or_value, validate_if_exists_behavior
 
 SCOPES = (
     {
@@ -62,9 +60,9 @@ class BigQueryConnector(KlondikeBaseDBConnector):
         self.location = location
         self.client_options = client_options
 
-        self.__dialect = "bigquery"
-        self.__client = None
-        self.__timeout = timeout
+        self._dialect = "bigquery"
+        self._client = None
+        self._timeout = timeout
 
         if not self.app_creds:
             if (
@@ -90,7 +88,7 @@ class BigQueryConnector(KlondikeBaseDBConnector):
 
     @property
     def dialect(self):
-        return self.__dialect
+        return self._dialect
 
     @property
     def client(self):
@@ -99,22 +97,22 @@ class BigQueryConnector(KlondikeBaseDBConnector):
         as class property
         """
 
-        if not self.__client:
-            self.__client = bigquery.Client(
+        if not self._client:
+            self._client = bigquery.Client(
                 project=self.project,
                 location=self.location,
                 client_options=self.client_options,
             )
 
-        return self.__client
+        return self._client
 
     @property
     def timeout(self):
-        return self.__timeout
+        return self._timeout
 
     @timeout.setter
     def timeout(self, timeout):
-        self.__timeout = timeout
+        self._timeout = timeout
 
     def __setup_google_app_creds(self, app_creds: Union[str, dict], env_variable: str):
         "Sets runtime environment variable for Google SDK"
@@ -153,8 +151,6 @@ class BigQueryConnector(KlondikeBaseDBConnector):
         def set_table_schema(table_schema: list):
             return [bigquery.SchemaField(**x) for x in table_schema]
 
-        ###
-
         if not base_job_config:
             logger.debug("No job config provided, starting fresh")
             base_job_config = LoadJobConfig()
@@ -170,8 +166,6 @@ class BigQueryConnector(KlondikeBaseDBConnector):
 
         base_job_config.max_bad_records = max_bad_records
         base_job_config.write_disposition = set_write_disposition(if_exists=if_exists)
-
-        ###
 
         # List of available LoadJobConfig attributes
         _attributes = [x for x in dict(vars(LoadJobConfig)).keys()]
@@ -247,7 +241,7 @@ class BigQueryConnector(KlondikeBaseDBConnector):
             if_exists = "fail"
 
         load_job_config = self.__set_load_job_config(
-            base_load_conifg=load_job_config,
+            base_job_config=load_job_config,
             max_bad_records=max_bad_records,
             table_schema=table_schema,
             if_exists=if_exists,
