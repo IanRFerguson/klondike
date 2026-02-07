@@ -115,6 +115,30 @@ wheels = [
 ]
 
 [[package]]
+name = "colorlog"
+version = "6.10.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a2/61/f083b5ac52e505dfc1c624eafbf8c7589a0d7f32daa398d2e7590efa5fda/colorlog-6.10.1.tar.gz", hash = "sha256:eb4ae5cb65fe7fec7773c2306061a8e63e02efc2c72eba9d27b0fa23c94f1321", size = 17162, upload-time = "2025-10-16T16:14:11.978Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/c1/e419ef3723a074172b68aaa89c9f3de486ed4c2399e2dbd8113a4fdcaf9e/colorlog-6.10.1-py3-none-any.whl", hash = "sha256:2d7e8348291948af66122cff006c9f8da6255d224e7cf8e37d8de2df3bad8c9c", size = 11743, upload-time = "2025-10-16T16:14:10.512Z" },
+]
+
+[[package]]
+name = "colorlogger"
+version = "1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorlog" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9f/d1/98df49db8d44c12c41f243d1fc220aa86afbb70040dc3afce8ffbc6aeb63/colorlogger-1.0.tar.gz", hash = "sha256:bc4fe36aafa911618894c0bb7534f4f254c20121f876173ba5911b0239061bdc", size = 2948, upload-time = "2018-06-15T11:32:16.288Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/19/e3/985d30906fe098e7094a4ce75b402bf9a916f362337d6bf518414451e342/colorlogger-1.0-py3-none-any.whl", hash = "sha256:274c39fc4ac8df3318b1132172f88d1780f4ecf744ec993e112a49a1edf406de", size = 3242, upload-time = "2018-06-15T11:32:12.802Z" },
+]
+
+[[package]]
 name = "coverage"
 version = "7.13.3"
 source = { registry = "https://pypi.org/simple" }
@@ -387,9 +411,10 @@ wheels = [
 
 [[package]]
 name = "klondike"
-version = "0.3.3"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
+    { name = "colorlogger" },
     { name = "google-cloud-bigquery" },
     { name = "google-cloud-storage" },
     { name = "polars" },
@@ -409,6 +434,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "colorlogger", specifier = ">=1.0" },
     { name = "google-cloud-bigquery", specifier = "==3.40.0" },
     { name = "google-cloud-storage", specifier = "==3.9.0" },
     { name = "polars", specifier = "==1.38.1" },

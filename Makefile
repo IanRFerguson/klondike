@@ -13,7 +13,7 @@ ruff:
 	@uv run ruff format .
 
 pytest:
-	@uv run pytest -rf tests/*
+	@uv run pytest -rf tests
 
 mypy:
 	@uv run mypy klondike
