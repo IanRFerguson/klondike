@@ -7,11 +7,11 @@ import snowflake.connector as sf
 from snowflake.connector.pandas_tools import write_pandas
 
 from klondike import logger
-from klondike.base.abc_klondike import KlondikeBaseDBConnector
+from klondike.base.abc_klondike import KlondikeBaseDatabaseConnector
 from klondike.utilities.utilities import get_env_or_value, validate_if_exists_behavior
 
 
-class SnowflakeConnector(KlondikeBaseDBConnector):
+class SnowflakeConnector(KlondikeBaseDatabaseConnector):
     """
     Leverages connection to Snowflake to read and write Polars DataFrame
     objects to the data warehouse

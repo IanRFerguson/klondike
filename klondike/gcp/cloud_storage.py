@@ -1,6 +1,6 @@
-from klondike.base.abc_klondike import KlondikeBaseFlatFileConnector
+from klondike.base.abc_klondike import KlondikeBaseStorageConnector
 
 
 # TODO
-class CloudStorageConnector(KlondikeBaseFlatFileConnector):
+class CloudStorageConnector(KlondikeBaseStorageConnector):
     pass

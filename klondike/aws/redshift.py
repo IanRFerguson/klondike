@@ -1,6 +1,6 @@
-from klondike.base.abc_klondike import KlondikeBaseDBConnector
+from klondike.base.abc_klondike import KlondikeBaseDatabaseConnector
 
 
 # TODO
-class RedshiftConnector(KlondikeBaseDBConnector):
+class RedshiftConnector(KlondikeBaseDatabaseConnector):
     pass

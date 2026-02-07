@@ -4,7 +4,7 @@ from typing import Union
 import polars as pl
 
 
-class KlondikeBaseDBConnector(ABC):
+class KlondikeBaseDatabaseConnector(ABC):
     """
     Abstract base class for all Klondike database connectors.
 
@@ -87,7 +87,7 @@ class KlondikeBaseDBConnector(ABC):
         pass
 
 
-class KlondikeBaseFlatFileConnector(ABC):
+class KlondikeBaseStorageConnector(ABC):
     """
     Abstract base class for all Klondike flat file storage connectors.
 

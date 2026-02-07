@@ -10,7 +10,7 @@ from google.cloud.bigquery import LoadJobConfig
 from google.cloud.exceptions import NotFound
 
 from klondike import logger
-from klondike.base.abc_klondike import KlondikeBaseDBConnector
+from klondike.base.abc_klondike import KlondikeBaseDatabaseConnector
 from klondike.utilities.utilities import get_env_or_value, validate_if_exists_behavior
 
 SCOPES = (
@@ -22,7 +22,7 @@ SCOPES = (
 )[0]
 
 
-class BigQueryConnector(KlondikeBaseDBConnector):
+class BigQueryConnector(KlondikeBaseDatabaseConnector):
     """
     Establish and authenticate a connection to a BigQuery warehouse
 
