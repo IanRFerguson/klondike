@@ -1,17 +1,17 @@
 import os
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
+import polars as pl
 from google.storage import Blob, Bucket, Client
-from polars import DataFrame
 
-from klondike import logger
 from klondike.base.abc_klondike import KlondikeBaseStorageConnector
+from klondike.utilities.logger import logger
 
 
 class CloudStorageConnector(KlondikeBaseStorageConnector):
     def __init__(
         self,
-        app_creds: Optional[Union[str, dict]] = None,
+        app_creds: Optional[Union[str, dict[str, Any]]] = None,
         project: Optional[str] = None,
         location: Optional[str] = None,
         google_environment_variable: str = "GOOGLE_APPLICATION_CREDENTIALS",
@@ -38,7 +38,7 @@ class CloudStorageConnector(KlondikeBaseStorageConnector):
         self._client = None
 
     @property
-    def client(self):
+    def client(self) -> Client:
         if self._client is None:
             if self.app_creds is not None:
                 self._client = (
@@ -62,7 +62,8 @@ class CloudStorageConnector(KlondikeBaseStorageConnector):
         bucket_name: str,
         prefix: Optional[str] = None,
         pattern: Optional[str] = None,
-    ) -> List[Blob]:
+        **kwargs: Any,
+    ) -> list[str]:
         """
         List blobs in a specified bucket, with optional filtering by prefix and pattern.
 
@@ -72,7 +73,7 @@ class CloudStorageConnector(KlondikeBaseStorageConnector):
             pattern: Optional pattern to filter blobs (e.g., file extension).
 
         Returns:
-            List of Blob objects matching the specified criteria.
+            List of blob names matching the specified criteria.
         """
 
         bucket = self.client.bucket(bucket_name)
@@ -81,42 +82,55 @@ class CloudStorageConnector(KlondikeBaseStorageConnector):
         if pattern:
             blobs = [blob for blob in blobs if pattern in blob.name]
 
-        return list(blobs)
+        return [blob.name for blob in blobs]
 
-    def list_buckets(self) -> List[Bucket]:
+    def list_buckets(self, **kwargs: Any) -> list[str]:
         """
         List all buckets in the project.
         Returns:
-            List of Bucket objects in the project.
+            List of bucket names in the project.
         """
 
-        return list(self.client.list_buckets())
+        return [bucket.name for bucket in self.client.list_buckets()]
 
     def get_blob(
-        self, bucket_name: str, blob_name: str, local_path: Optional[str] = None
-    ) -> str:
+        self,
+        bucket_name: str,
+        blob_name: str,
+        local_path: Optional[str] = None,
+        **kwargs: Any,
+    ) -> pl.DataFrame:
         """
-        Download a blob from Cloud Storage to a local file.
+        Download a blob from Cloud Storage and read it as a Polars DataFrame.
 
         Args:
             bucket_name: Name of the bucket containing the blob.
             blob_name: Name of the blob to download.
-            local_path: Optional local file path to save the downloaded blob. If not provided, will save to current directory with the same name as the blob.
+            local_path: Optional local file path to save the downloaded blob. If not provided, will save to a temp file.
         Returns:
-            The local file path where the blob was downloaded.
+            Polars DataFrame read from the blob.
         """
 
         bucket = self.client.bucket(bucket_name)
         blob = bucket.blob(blob_name)
 
         if local_path is None:
-            local_path = os.path.basename(blob_name)
+            local_path = f"/tmp/{os.path.basename(blob_name)}"
 
         blob.download_to_filename(local_path)
 
-        return local_path
+        # Read the file as a DataFrame (assuming CSV format, adjust as needed)
+        df = pl.read_csv(local_path)
 
-    def put_blob(self, df: DataFrame, bucket_name: str, blob_name: str) -> None:
+        # Clean up temp file if we created it
+        if local_path.startswith("/tmp/"):
+            os.remove(local_path)
+
+        return df
+
+    def put_blob(
+        self, df: pl.DataFrame, bucket_name: str, blob_name: str, **kwargs: Any
+    ) -> None:
         """
         Upload a Polars DataFrame to Cloud Storage as a blob.
 

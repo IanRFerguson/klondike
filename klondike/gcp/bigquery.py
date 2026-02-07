@@ -2,15 +2,15 @@ import io
 import json
 import os
 import tempfile
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import polars as pl
 from google.cloud import bigquery
 from google.cloud.bigquery import LoadJobConfig
 from google.cloud.exceptions import NotFound
 
-from klondike import logger
 from klondike.base.abc_klondike import KlondikeBaseDatabaseConnector
+from klondike.utilities.logger import logger
 from klondike.utilities.utilities import get_env_or_value, validate_if_exists_behavior
 
 SCOPES = (
@@ -47,11 +47,11 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
 
     def __init__(
         self,
-        app_creds: Optional[Union[str, dict]] = None,
+        app_creds: Optional[Union[str, dict[str, Any]]] = None,
         project: Optional[str] = None,
         location: Optional[str] = None,
         timeout: int = 60,
-        client_options: dict = SCOPES,
+        client_options: dict[str, Any] = SCOPES,
         google_environment_variable: str = "GOOGLE_APPLICATION_CREDENTIALS",
         bypass_env_variable: bool = False,
     ):
@@ -61,7 +61,7 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
         self.client_options = client_options
 
         self._dialect = "bigquery"
-        self._client = None
+        self._client: Optional[bigquery.Client] = None
         self._timeout = timeout
 
         if not self.app_creds:
@@ -87,17 +87,17 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
             )
 
     @property
-    def dialect(self):
+    def dialect(self) -> str:
         return self._dialect
 
     @property
-    def client(self):
+    def client(self) -> bigquery.Client:
         """
         Instantiate BigQuery client and assign it
         as class property
         """
 
-        if not self._client:
+        if self._client is None:
             self._client = bigquery.Client(
                 project=self.project,
                 location=self.location,
@@ -107,14 +107,16 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
         return self._client
 
     @property
-    def timeout(self):
+    def timeout(self) -> int:
         return self._timeout
 
     @timeout.setter
-    def timeout(self, timeout):
+    def timeout(self, timeout: int) -> None:
         self._timeout = timeout
 
-    def __setup_google_app_creds(self, app_creds: Union[str, dict], env_variable: str):
+    def __setup_google_app_creds(
+        self, app_creds: Union[str, dict[str, Any]], env_variable: str
+    ) -> None:
         "Sets runtime environment variable for Google SDK"
 
         if isinstance(app_creds, dict):
@@ -133,14 +135,14 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
         self,
         base_job_config: Optional[LoadJobConfig] = None,
         max_bad_records: int = 0,
-        table_schema: list = None,
+        table_schema: Optional[list[dict[str, Any]]] = None,
         if_exists: str = "fail",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> LoadJobConfig:
         "Defines `LoadConfigJob` when writing to BigQuery"
 
-        def set_write_disposition(if_exists: str):
-            DISPOSITION_MAP = {
+        def set_write_disposition(if_exists: str) -> str:
+            DISPOSITION_MAP: dict[str, str] = {
                 "fail": bigquery.WriteDisposition.WRITE_EMPTY,
                 "append": bigquery.WriteDisposition.WRITE_APPEND,
                 "truncate": bigquery.WriteDisposition.WRITE_TRUNCATE,
@@ -148,7 +150,9 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
 
             return DISPOSITION_MAP[if_exists]
 
-        def set_table_schema(table_schema: list):
+        def set_table_schema(
+            table_schema: list[dict[str, Any]],
+        ) -> list[bigquery.SchemaField]:
             return [bigquery.SchemaField(**x) for x in table_schema]
 
         if not base_job_config:
@@ -182,11 +186,11 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
         for k, v in kwargs.items():
             if k in _attributes and k not in _reserved_attributes:
                 logger.debug(f"Updating {k} parameter in job config [value={v}]")
-                base_job_config[k] = v
+                setattr(base_job_config, k, v)
 
         return base_job_config
 
-    def read_dataframe(self, sql: str) -> pl.DataFrame:
+    def read_dataframe(self, sql: str, **kwargs: Any) -> pl.DataFrame:
         """
         Reads a Polars DataFrame based on a SQL query
 
@@ -198,7 +202,10 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
             Polars DataFrame object
         """
 
-        df = self.query(sql=sql, return_results=True)
+        df = self.query(sql=sql, return_results=True, **kwargs)
+
+        if df is None:
+            return pl.DataFrame()
 
         return df
 
@@ -208,9 +215,9 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
         table_name: str,
         load_job_config: Optional[LoadJobConfig] = None,
         max_bad_records: int = 0,
-        table_schema: list = None,
+        table_schema: Optional[list[dict[str, Any]]] = None,
         if_exists: str = "fail",
-        **load_kwargs,
+        **load_kwargs: Any,
     ) -> None:
         """
         Writes a Polars DataFrame to BigQuery
@@ -259,7 +266,7 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
         load_job.result()
         logger.info(f"Successfuly wrote {len(df)} rows to {table_name}")
 
-    def table_exists(self, table_name: str) -> bool:
+    def table_exists(self, table_name: str, **kwargs: Any) -> bool:
         """
         Determines if a BigQuery table exists
 
@@ -275,7 +282,7 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
         except NotFound:
             return False
 
-    def list_tables(self, schema_name: str) -> list:
+    def list_tables(self, schema_name: str, **kwargs: Any) -> list[str]:
         """
         Gets a list of available tables in a BigQuery schema
 
@@ -293,8 +300,12 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
         ]
 
     def query(
-        self, sql: str, timeout: Optional[int] = None, return_results: bool = True
-    ) -> pl.DataFrame:
+        self,
+        sql: str,
+        timeout: Optional[int] = None,
+        return_results: bool = True,
+        **kwargs: Any,
+    ) -> Union[pl.DataFrame, None]:
         """
         Executes a SQL query and returns a Polars DataFrame.
 
@@ -320,7 +331,12 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
         result = query_job.result()
 
         # Read as arrow stream into Polars DataFrame
-        df = pl.from_arrow(result.to_arrow())
+        result_arrow = result.to_arrow()
+        df = pl.from_arrow(result_arrow)
+
+        # Ensure we return a DataFrame, not a Series
+        if isinstance(df, pl.Series):
+            df = df.to_frame()
 
         # Query yielded no results
         if df.is_empty():
@@ -329,7 +345,7 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
 
         # Intended for DDL calls (adding columns, creating views, etc.)
         elif not return_results:
-            return
+            return None
 
         # Query returned results
         else:

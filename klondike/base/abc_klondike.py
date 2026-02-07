@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Any, Union
 
 import polars as pl
 
@@ -16,10 +16,10 @@ class KlondikeBaseDatabaseConnector(ABC):
     @abstractmethod
     def dialect(self) -> str:
         """Return the SQL dialect name for this connector (e.g., 'snowflake', 'bigquery')."""
-        pass
+        ...
 
     @abstractmethod
-    def query(self, sql: str, **kwargs) -> Union[pl.DataFrame, None]:
+    def query(self, sql: str, **kwargs: Any) -> Union[pl.DataFrame, None]:
         """
         Execute a SQL query and return results as a Polars DataFrame.
 
@@ -33,7 +33,7 @@ class KlondikeBaseDatabaseConnector(ABC):
         pass
 
     @abstractmethod
-    def table_exists(self, table_name: str, **kwargs) -> bool:
+    def table_exists(self, table_name: str, **kwargs: Any) -> bool:
         """
         Check if a table exists in the database.
 
@@ -47,7 +47,7 @@ class KlondikeBaseDatabaseConnector(ABC):
         pass
 
     @abstractmethod
-    def list_tables(self, schema_name: str, **kwargs) -> list:
+    def list_tables(self, schema_name: str, **kwargs: Any) -> list[str]:
         """
         List all tables in a given schema.
 
@@ -61,7 +61,7 @@ class KlondikeBaseDatabaseConnector(ABC):
         pass
 
     @abstractmethod
-    def read_dataframe(self, sql: str, **kwargs) -> pl.DataFrame:
+    def read_dataframe(self, sql: str, **kwargs: Any) -> pl.DataFrame:
         """
         Read data from the database into a Polars DataFrame.
 
@@ -75,7 +75,7 @@ class KlondikeBaseDatabaseConnector(ABC):
         pass
 
     @abstractmethod
-    def write_dataframe(self, df: pl.DataFrame, table_name: str, **kwargs) -> None:
+    def write_dataframe(self, df: pl.DataFrame, table_name: str, **kwargs: Any) -> None:
         """
         Write a Polars DataFrame to the database.
 
@@ -96,7 +96,7 @@ class KlondikeBaseStorageConnector(ABC):
     """
 
     @abstractmethod
-    def list_buckets(self, **kwargs) -> list:
+    def list_buckets(self, **kwargs: Any) -> list[str]:
         """
         List all available buckets/containers.
 
@@ -106,7 +106,7 @@ class KlondikeBaseStorageConnector(ABC):
         pass
 
     @abstractmethod
-    def list_blobs(self, bucket_name: str, **kwargs) -> list:
+    def list_blobs(self, bucket_name: str, **kwargs: Any) -> list[str]:
         """
         List all blobs/objects in a bucket.
 
@@ -120,7 +120,7 @@ class KlondikeBaseStorageConnector(ABC):
         pass
 
     @abstractmethod
-    def get_blob(self, bucket_name: str, blob_name: str, **kwargs) -> pl.DataFrame:
+    def get_blob(self, bucket_name: str, blob_name: str, **kwargs: Any) -> pl.DataFrame:
         """
         Read a blob/object from storage into a Polars DataFrame.
 
@@ -136,7 +136,7 @@ class KlondikeBaseStorageConnector(ABC):
 
     @abstractmethod
     def put_blob(
-        self, df: pl.DataFrame, bucket_name: str, blob_name: str, **kwargs
+        self, df: pl.DataFrame, bucket_name: str, blob_name: str, **kwargs: Any
     ) -> None:
         """
         Write a Polars DataFrame to storage as a blob/object.

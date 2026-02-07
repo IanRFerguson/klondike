@@ -1,13 +1,13 @@
 import os
 from contextlib import contextmanager
-from typing import Optional
+from typing import Any, Generator, Optional, Union
 
 import polars as pl
 import snowflake.connector as sf
 from snowflake.connector.pandas_tools import write_pandas
 
-from klondike import logger
 from klondike.base.abc_klondike import KlondikeBaseDatabaseConnector
+from klondike.utilities.logger import logger
 from klondike.utilities.utilities import get_env_or_value, validate_if_exists_behavior
 
 
@@ -65,7 +65,7 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
         self._dialect = "snowflake"
         self._row_chunk_size = row_chunk_size
 
-    def _validate_authentication(self):
+    def _validate_authentication(self) -> None:
         _auth_vals = [
             self.snowflake_user,
             self.snowflake_password,
@@ -80,35 +80,35 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
             )
 
     @property
-    def dialect(self):
+    def dialect(self) -> str:
         return self._dialect
 
     @property
-    def snowflake_warehouse(self):
+    def snowflake_warehouse(self) -> Optional[str]:
         return self._snowflake_warehouse
 
     @snowflake_warehouse.setter
-    def snowflake_warehouse(self, warehouse):
+    def snowflake_warehouse(self, warehouse: str) -> None:
         self._snowflake_warehouse = warehouse
 
     @property
-    def snowflake_database(self):
+    def snowflake_database(self) -> Optional[str]:
         return self._snowflake_database
 
     @snowflake_database.setter
-    def snowflake_database(self, database):
+    def snowflake_database(self, database: str) -> None:
         self._snowflake_database = database
 
     @property
-    def row_chunk_size(self):
+    def row_chunk_size(self) -> int:
         return self._row_chunk_size
 
     @row_chunk_size.setter
-    def row_chunk_size(self, row_chunk_size):
+    def row_chunk_size(self, row_chunk_size: int) -> None:
         self._row_chunk_size = row_chunk_size
 
     @contextmanager
-    def connection(self):
+    def connection(self) -> Generator[Any, None, None]:
         """
         Creates a connection to Snowflake
         """
@@ -127,7 +127,7 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
             conn.close()
 
     @contextmanager
-    def cursor(self, connection):
+    def cursor(self, connection: Any) -> Generator[Any, None, None]:
         """
         Leverages Snowflake connection to execute SQL transactions
         """
@@ -139,7 +139,7 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
         finally:
             cur.close()
 
-    def query(self, sql: str):
+    def query(self, sql: str, **kwargs: Any) -> Union[pl.DataFrame, None]:
         """
         Executes SQL command against Snowflake warehouse
 
@@ -156,7 +156,11 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
                 _resp = _cursor.fetch_arrow_batches()
 
         try:
-            return pl.from_arrow(_resp)
+            result = pl.from_arrow(_resp)
+            # Ensure we return a DataFrame, not a Series
+            if isinstance(result, pl.Series):
+                return result.to_frame()
+            return result
         except ValueError as ve:
             # NOTE - This appears to be Polars response to empty fetch_arrow_batches()
             # This should be interrogated more, but is functional
@@ -165,7 +169,7 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
                 return pl.DataFrame()
             raise
 
-    def read_dataframe(self, sql: str) -> pl.DataFrame:
+    def read_dataframe(self, sql: str, **kwargs: Any) -> pl.DataFrame:
         """
         Executes a SQL query against the Snowflake warehouse
         and returns the result as a Polars DataFrame object
@@ -180,21 +184,25 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
 
         # Execute SQL against warehouse
         logger.debug("Running SQL...", sql)
-        df = self.query(sql=sql)
+        result = self.query(sql=sql, **kwargs)
 
-        logger.info(f"Successfully read {len(df)} rows from Snowflake")
+        if result is None:
+            return pl.DataFrame()
 
-        return df
+        logger.info(f"Successfully read {len(result)} rows from Snowflake")
+
+        return result
 
     def write_dataframe(
         self,
         df: pl.DataFrame,
         table_name: str,
-        schema_name: str,
+        schema_name: str = "",
         database_name: Optional[str] = None,
         if_exists: str = "append",
         auto_create_table: bool = True,
         chunk_output: bool = False,
+        **kwargs: Any,
     ) -> None:
         """
         Writes a Polars DataFrame to Snowflake
@@ -242,7 +250,7 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
             auto_create_table = False
 
         elif if_exists == "fail":
-            if self.table_exists(schema_name=schema_name, table_name=table_name):
+            if self.table_exists(table_name=table_name, database_name=database_name):
                 raise sf.errors.DatabaseError(f"{table_name} already exists")
 
         database = database_name if database_name else self.snowflake_database
@@ -269,7 +277,7 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
             raise
 
     def table_exists(
-        self, table_name: str, database_name: Optional[str] = None
+        self, table_name: str, database_name: Optional[str] = None, **kwargs: Any
     ) -> bool:
         """
         Determines if a Snowflake table exists in the warehouse
@@ -299,11 +307,14 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
 
         resp = self.query(sql=sql)
 
+        if resp is None:
+            return False
+
         return not resp.is_empty()
 
     def list_tables(
-        self, schema_name: str, database_name: Optional[str] = None
-    ) -> list:
+        self, schema_name: str, database_name: Optional[str] = None, **kwargs: Any
+    ) -> list[str]:
         """
         Gets a list of available tables in a Snowflake schema
 
@@ -329,6 +340,9 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
         """
 
         resp = self.query(sql=sql)
+
+        if resp is None:
+            return []
 
         resp = resp.select(table_name=pl.concat_str(resp.columns, separator="."))
 

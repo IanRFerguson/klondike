@@ -2,7 +2,7 @@ import importlib
 
 from klondike.utilities.logger import logger
 
-__all__ = []
+__all__: list[str] = []
 POLAR_OBJECTS = [
     ("klondike.gcp.bigquery", "BigQueryConnector"),
     ("klondike.gcp.cloud_storage", "CloudStorageConnector"),
