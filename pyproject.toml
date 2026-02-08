@@ -40,6 +40,9 @@ dev = [
     "mypy~=1.9.0",           # Strict static type checking
     "pre-commit~=3.4.0",
     "jupyter>=1.1.1",
+    "faker==40.4.0",
+    "tqdm==4.67.3",
+    "click==8.3.1",
 ]
 
 [tool.ruff]
