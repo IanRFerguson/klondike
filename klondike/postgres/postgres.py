@@ -1,8 +1,6 @@
-from klondike.base.abc_klondike import KlondikeBaseDBConnector
-
-##########
+from klondike.base.abc_klondike import KlondikeBaseDatabaseConnector
 
 
 # TODO
-class PostgresConnector(KlondikeBaseDBConnector):
+class PostgresConnector(KlondikeBaseDatabaseConnector):
     pass
