@@ -19,12 +19,16 @@ class KlondikeBaseDatabaseConnector(ABC):
         ...
 
     @abstractmethod
-    def query(self, sql: str, **kwargs: Any) -> Union[pl.DataFrame, None]:
+    def query(
+        self, sql: str, timeout: int = 60, return_results: bool = True, **kwargs: Any
+    ) -> Union[pl.DataFrame, None]:
         """
         Execute a SQL query and return results as a Polars DataFrame.
 
         Args:
             sql: SQL query string to execute
+            timeout: Query timeout in seconds
+            return_results: Whether to return query results (True) or not (False)
             **kwargs: Additional connector-specific query parameters
 
         Returns:

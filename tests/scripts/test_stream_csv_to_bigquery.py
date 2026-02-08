@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import polars as pl
 
@@ -7,7 +7,7 @@ from klondike.gcp.bigquery import BigQueryConnector
 from klondike.scripts.stream_csv_to_database import stream_csv_to_database
 
 
-class TestStreamCsvToBigquery(unittest.TestCase):
+class TestStreamCsvToDatabase(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Create mock BigQueryConnector

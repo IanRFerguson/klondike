@@ -11,7 +11,7 @@ from google.cloud.exceptions import NotFound
 
 from klondike.base.abc_klondike import KlondikeBaseDatabaseConnector
 from klondike.utilities.logger import logger
-from klondike.utilities.utilities import get_env_or_value, validate_if_exists_behavior
+from klondike.utilities.utilities import validate_if_exists_behavior
 
 SCOPES = (
     {
@@ -339,7 +339,7 @@ class BigQueryConnector(KlondikeBaseDatabaseConnector):
             df = df.to_frame()
 
         # Query yielded no results
-        if df.is_empty():
+        if df.is_empty() and return_results:
             logger.warning("No results returned")
             return pl.DataFrame()
 

@@ -73,7 +73,7 @@ docstring-code-line-length = "dynamic"
 # Strict type checking configuration
 strict = true
 ignore_missing_imports = true
-mypy_path = "src"
+mypy_path = "."
 explicit_package_bases = true
 
 [tool.pytest.ini_options]

@@ -139,13 +139,19 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
         finally:
             cur.close()
 
-    def query(self, sql: str, **kwargs: Any) -> Union[pl.DataFrame, None]:
+    def query(
+        self, sql: str, timeout: int = 90, return_results: bool = True, **kwargs: Any
+    ) -> Union[pl.DataFrame, None]:
         """
         Executes SQL command against Snowflake warehouse
 
         Args:
-            sql: `str`
-                SQL query in string format
+            sql (str): SQL command to be executed
+            return_results (bool): If True, returns query results as Polars DataFrame.
+                                   If False, returns None.
+
+        Returns:
+            Polars DataFrame containing query results, or None for DDL operations
         """
 
         with self.connection() as _conn:
@@ -183,13 +189,13 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
         """
 
         # Execute SQL against warehouse
-        logger.debug("Running SQL...", sql)
+        logger.debug("Running SQL...%s", sql)
         result = self.query(sql=sql, **kwargs)
 
         if result is None:
             return pl.DataFrame()
 
-        logger.info(f"Successfully read {len(result)} rows from Snowflake")
+        logger.info("Successfully read %d rows from Snowflake", len(result))
 
         return result
 
@@ -255,9 +261,7 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
 
         database = database_name if database_name else self.snowflake_database
 
-        logger.info(
-            f"Writing to {self.snowflake_database}.{schema_name}.{table_name}..."
-        )
+        logger.info("Writing to %s.%s.%s...", database, schema_name, table_name)
         with self.connection() as conn:
             resp, num_chunks, num_rows, output = write_pandas(
                 conn=conn,
@@ -271,9 +275,9 @@ class SnowflakeConnector(KlondikeBaseDatabaseConnector):
             )
 
         if resp:
-            logger.info(f"Successfully wrote {num_rows} rows to {table_name}")
+            logger.info("Successfully wrote %d rows to %s", num_rows, table_name)
         else:
-            logger.error(f"Failed to write to {table_name}", resp)
+            logger.error("Failed to write to %s", table_name, resp)
             raise
 
     def table_exists(
