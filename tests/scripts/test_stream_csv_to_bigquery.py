@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, Mock, call, patch
 import polars as pl
 
 from klondike.gcp.bigquery import BigQueryConnector
-from klondike.scripts.stream_csv_to_bigquery import stream_csv_to_bigquery
+from klondike.scripts.stream_csv_to_database import stream_csv_to_database
 
 
 class TestStreamCsvToBigquery(unittest.TestCase):
@@ -32,22 +32,21 @@ class TestStreamCsvToBigquery(unittest.TestCase):
             ]
         )
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_basic(self, mock_scan_csv):
         """
         Test basic CSV streaming with default parameters
         """
         # Mock the lazy dataframe and batches
         mock_lazy_df = MagicMock()
-        mock_lazy_df.collect_batches.return_value = [self.batch_1, self.batch_2]
+        mock_lazy_df.collect().iter_slices.return_value = [self.batch_1, self.batch_2]
         mock_scan_csv.return_value = mock_lazy_df
 
         # Execute the function
-        stream_csv_to_bigquery(
-            bigquery_connector=self.mock_bq_connector,
+        stream_csv_to_database(
+            connector=self.mock_bq_connector,
             csv_path="/path/to/test.csv",
-            dataset_name="test_dataset",
-            table_name="test_table",
+            destination_table_name="test_dataset.test_table",
         )
 
         # Verify scan_csv was called with correct parameters
@@ -57,8 +56,8 @@ class TestStreamCsvToBigquery(unittest.TestCase):
             infer_schema_length=0,
         )
 
-        # Verify collect_batches was called with default batch size
-        mock_lazy_df.collect_batches.assert_called_once_with(chunk_size=10_000)
+        # Verify iter_slices was called with default batch size
+        mock_lazy_df.collect().iter_slices.assert_called_once_with(n_rows=10_000)
 
         # Verify write_dataframe was called twice (once per batch)
         self.assertEqual(self.mock_bq_connector.write_dataframe.call_count, 2)
@@ -68,13 +67,13 @@ class TestStreamCsvToBigquery(unittest.TestCase):
         self.assertEqual(calls[0][1]["table_name"], "test_dataset.test_table")
         self.assertEqual(calls[1][1]["table_name"], "test_dataset.test_table")
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_custom_batch_size(self, mock_scan_csv):
         """
         Test CSV streaming with custom batch size
         """
         mock_lazy_df = MagicMock()
-        mock_lazy_df.collect_batches.return_value = [
+        mock_lazy_df.collect().iter_slices.return_value = [
             self.batch_1,
             self.batch_2,
             self.batch_3,
@@ -82,35 +81,33 @@ class TestStreamCsvToBigquery(unittest.TestCase):
         mock_scan_csv.return_value = mock_lazy_df
 
         # Execute with custom batch size
-        stream_csv_to_bigquery(
-            bigquery_connector=self.mock_bq_connector,
+        stream_csv_to_database(
+            connector=self.mock_bq_connector,
             csv_path="/path/to/test.csv",
-            dataset_name="test_dataset",
-            table_name="test_table",
+            destination_table_name="test_dataset.test_table",
             batch_size=500,
         )
 
-        # Verify collect_batches was called with custom batch size
-        mock_lazy_df.collect_batches.assert_called_once_with(chunk_size=500)
+        # Verify iter_slices was called with custom batch size
+        mock_lazy_df.collect().iter_slices.assert_called_once_with(n_rows=500)
 
         # Verify write_dataframe was called three times
         self.assertEqual(self.mock_bq_connector.write_dataframe.call_count, 3)
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_custom_separator(self, mock_scan_csv):
         """
         Test CSV streaming with custom separator
         """
         mock_lazy_df = MagicMock()
-        mock_lazy_df.collect_batches.return_value = [self.batch_1]
+        mock_lazy_df.collect().iter_slices.return_value = [self.batch_1]
         mock_scan_csv.return_value = mock_lazy_df
 
         # Execute with custom separator
-        stream_csv_to_bigquery(
-            bigquery_connector=self.mock_bq_connector,
+        stream_csv_to_database(
+            connector=self.mock_bq_connector,
             csv_path="/path/to/test.tsv",
-            dataset_name="test_dataset",
-            table_name="test_table",
+            destination_table_name="test_dataset.test_table",
             csv_separator="\t",
         )
 
@@ -121,21 +118,20 @@ class TestStreamCsvToBigquery(unittest.TestCase):
             infer_schema_length=0,
         )
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_with_schema_inference(self, mock_scan_csv):
         """
         Test CSV streaming with schema inference
         """
         mock_lazy_df = MagicMock()
-        mock_lazy_df.collect_batches.return_value = [self.batch_1]
+        mock_lazy_df.collect().iter_slices.return_value = [self.batch_1]
         mock_scan_csv.return_value = mock_lazy_df
 
         # Execute with schema inference
-        stream_csv_to_bigquery(
-            bigquery_connector=self.mock_bq_connector,
+        stream_csv_to_database(
+            connector=self.mock_bq_connector,
             csv_path="/path/to/test.csv",
-            dataset_name="test_dataset",
-            table_name="test_table",
+            destination_table_name="test_dataset.test_table",
             infer_schema_length=1000,
         )
 
@@ -146,21 +142,20 @@ class TestStreamCsvToBigquery(unittest.TestCase):
             infer_schema_length=1000,
         )
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_with_bigquery_kwargs(self, mock_scan_csv):
         """
         Test CSV streaming with additional BigQuery kwargs
         """
         mock_lazy_df = MagicMock()
-        mock_lazy_df.collect_batches.return_value = [self.batch_1, self.batch_2]
+        mock_lazy_df.collect().iter_slices.return_value = [self.batch_1, self.batch_2]
         mock_scan_csv.return_value = mock_lazy_df
 
         # Execute with BigQuery kwargs
-        stream_csv_to_bigquery(
-            bigquery_connector=self.mock_bq_connector,
+        stream_csv_to_database(
+            connector=self.mock_bq_connector,
             csv_path="/path/to/test.csv",
-            dataset_name="test_dataset",
-            table_name="test_table",
+            destination_table_name="test_dataset.test_table",
             if_exists="append",
             max_bad_records=10,
         )
@@ -171,74 +166,71 @@ class TestStreamCsvToBigquery(unittest.TestCase):
             self.assertEqual(call_args[1]["if_exists"], "append")
             self.assertEqual(call_args[1]["max_bad_records"], 10)
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_single_batch(self, mock_scan_csv):
         """
         Test CSV streaming with single batch (small file)
         """
         mock_lazy_df = MagicMock()
-        mock_lazy_df.collect_batches.return_value = [self.batch_1]
+        mock_lazy_df.collect().iter_slices.return_value = [self.batch_1]
         mock_scan_csv.return_value = mock_lazy_df
 
         # Execute
-        stream_csv_to_bigquery(
-            bigquery_connector=self.mock_bq_connector,
+        stream_csv_to_database(
+            connector=self.mock_bq_connector,
             csv_path="/path/to/small.csv",
-            dataset_name="test_dataset",
-            table_name="test_table",
+            destination_table_name="test_dataset.test_table",
         )
 
         # Verify write_dataframe was called only once
         self.assertEqual(self.mock_bq_connector.write_dataframe.call_count, 1)
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_empty_batches(self, mock_scan_csv):
         """
         Test CSV streaming with no batches (empty file)
         """
         mock_lazy_df = MagicMock()
-        mock_lazy_df.collect_batches.return_value = []
+        mock_lazy_df.collect().iter_slices.return_value = []
         mock_scan_csv.return_value = mock_lazy_df
 
         # Execute
-        stream_csv_to_bigquery(
-            bigquery_connector=self.mock_bq_connector,
+        stream_csv_to_database(
+            connector=self.mock_bq_connector,
             csv_path="/path/to/empty.csv",
-            dataset_name="test_dataset",
-            table_name="test_table",
+            destination_table_name="test_dataset.test_table",
         )
 
         # Verify write_dataframe was never called
         self.mock_bq_connector.write_dataframe.assert_not_called()
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_qualified_table_name(self, mock_scan_csv):
         """
         Test that table name is correctly qualified with dataset
         """
         mock_lazy_df = MagicMock()
-        mock_lazy_df.collect_batches.return_value = [self.batch_1]
+        mock_lazy_df.collect().iter_slices.return_value = [self.batch_1]
         mock_scan_csv.return_value = mock_lazy_df
 
         # Execute with different dataset and table names
-        stream_csv_to_bigquery(
-            bigquery_connector=self.mock_bq_connector,
+        stream_csv_to_database(
+            connector=self.mock_bq_connector,
             csv_path="/path/to/test.csv",
-            dataset_name="my_dataset",
-            table_name="my_table",
+            destination_table_name="my_dataset.my_table",
         )
 
         # Verify qualified table name
         call_args = self.mock_bq_connector.write_dataframe.call_args
         self.assertEqual(call_args[1]["table_name"], "my_dataset.my_table")
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_batch_ordering(self, mock_scan_csv):
         """
         Test that batches are processed in correct order
         """
         mock_lazy_df = MagicMock()
-        mock_lazy_df.collect_batches.return_value = [
+        mock_lazy_df.collect().iter_slices.return_value = [
             self.batch_1,
             self.batch_2,
             self.batch_3,
@@ -246,11 +238,10 @@ class TestStreamCsvToBigquery(unittest.TestCase):
         mock_scan_csv.return_value = mock_lazy_df
 
         # Execute
-        stream_csv_to_bigquery(
-            bigquery_connector=self.mock_bq_connector,
+        stream_csv_to_database(
+            connector=self.mock_bq_connector,
             csv_path="/path/to/test.csv",
-            dataset_name="test_dataset",
-            table_name="test_table",
+            destination_table_name="test_dataset.test_table",
         )
 
         # Verify batches were processed in order
@@ -262,7 +253,7 @@ class TestStreamCsvToBigquery(unittest.TestCase):
         # but we can verify the number of calls matches the number of batches
         self.assertEqual(len(calls), 3)
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_large_batch_count(self, mock_scan_csv):
         """
         Test streaming with many batches
@@ -270,28 +261,27 @@ class TestStreamCsvToBigquery(unittest.TestCase):
         mock_lazy_df = MagicMock()
         # Simulate 100 batches
         batches = [self.batch_1 for _ in range(100)]
-        mock_lazy_df.collect_batches.return_value = batches
+        mock_lazy_df.collect().iter_slices.return_value = batches
         mock_scan_csv.return_value = mock_lazy_df
 
         # Execute
-        stream_csv_to_bigquery(
-            bigquery_connector=self.mock_bq_connector,
+        stream_csv_to_database(
+            connector=self.mock_bq_connector,
             csv_path="/path/to/large.csv",
-            dataset_name="test_dataset",
-            table_name="test_table",
+            destination_table_name="test_dataset.test_table",
             batch_size=1000,
         )
 
         # Verify write_dataframe was called 100 times
         self.assertEqual(self.mock_bq_connector.write_dataframe.call_count, 100)
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_different_file_paths(self, mock_scan_csv):
         """
         Test with various file path formats
         """
         mock_lazy_df = MagicMock()
-        mock_lazy_df.collect_batches.return_value = [self.batch_1]
+        mock_lazy_df.collect().iter_slices.return_value = [self.batch_1]
         mock_scan_csv.return_value = mock_lazy_df
 
         test_paths = [
@@ -306,18 +296,17 @@ class TestStreamCsvToBigquery(unittest.TestCase):
             mock_scan_csv.reset_mock()
             self.mock_bq_connector.reset_mock()
 
-            stream_csv_to_bigquery(
-                bigquery_connector=self.mock_bq_connector,
+            stream_csv_to_database(
+                connector=self.mock_bq_connector,
                 csv_path=path,
-                dataset_name="test_dataset",
-                table_name="test_table",
+                destination_table_name="test_dataset.test_table",
             )
 
             # Verify scan_csv was called with the correct path
             mock_scan_csv.assert_called_once()
             self.assertEqual(mock_scan_csv.call_args[0][0], path)
 
-    @patch("klondike.scripts.stream_csv_to_bigquery.pl.scan_csv")
+    @patch("klondike.scripts.stream_csv_to_database.pl.scan_csv")
     def test_stream_csv_preserves_dataframe_content(self, mock_scan_csv):
         """
         Test that dataframe content is preserved during streaming
@@ -328,15 +317,14 @@ class TestStreamCsvToBigquery(unittest.TestCase):
                 {"id": 99, "name": "Test", "value": 999, "active": True},
             ]
         )
-        mock_lazy_df.collect_batches.return_value = [test_df]
+        mock_lazy_df.collect().iter_slices.return_value = [test_df]
         mock_scan_csv.return_value = mock_lazy_df
 
         # Execute
-        stream_csv_to_bigquery(
-            bigquery_connector=self.mock_bq_connector,
+        stream_csv_to_database(
+            connector=self.mock_bq_connector,
             csv_path="/path/to/test.csv",
-            dataset_name="test_dataset",
-            table_name="test_table",
+            destination_table_name="test_dataset.test_table",
         )
 
         # Verify the dataframe passed to write_dataframe
