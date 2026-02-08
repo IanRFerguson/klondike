@@ -1,6 +1,6 @@
 [project]
 name = "klondike"
-version = "0.3.0"
+version = "0.3.1"
 authors = [{ "name" = "Ian Richard Ferguson", "email" = "IAN@ianferguson.dev" }]
 description = "Klondike is a suite of database connectors, powered by Polars"
 requires-python = "~=3.12.0"
@@ -40,6 +40,9 @@ dev = [
     "mypy~=1.9.0",           # Strict static type checking
     "pre-commit~=3.4.0",
     "jupyter>=1.1.1",
+    "faker==40.4.0",
+    "tqdm==4.67.3",
+    "click==8.3.1",
 ]
 
 [tool.ruff]

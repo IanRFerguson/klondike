@@ -32,17 +32,24 @@ def stream_csv_to_database(
         **bigquery_kwargs: Additional keyword arguments to pass to the BigQuery upload method (e.g., write_disposition, etc.).
     """
 
-    lazy_df = pl.scan_csv(
-        csv_path,
-        separator=csv_separator,
-        infer_schema_length=infer_schema_length,
-    )
-
     records_written = 0
+    skip_rows_count = 0
     logger.info(
         f"Streaming data from {csv_path} to table {destination_table_name} in batches of {batch_size}..."
     )
-    for batch_df in lazy_df.collect().iter_slices(n_rows=batch_size):
+
+    while True:
+        batch_df = pl.read_csv(
+            csv_path,
+            separator=csv_separator,
+            infer_schema_length=infer_schema_length,
+            skip_rows=skip_rows_count,
+            n_rows=batch_size,
+        )
+
+        if len(batch_df) == 0:
+            break
+
         logger.debug(f"Uploading batch to table {destination_table_name}...")
         connector.write_dataframe(
             df=batch_df,
@@ -50,6 +57,7 @@ def stream_csv_to_database(
             **bigquery_kwargs,
         )
         records_written += len(batch_df)
+        skip_rows_count += len(batch_df)
 
     logger.info(
         f"Finished streaming {records_written} rows to {destination_table_name}"
