@@ -1,6 +1,6 @@
 [project]
 name = "klondike"
-version = "0.3.0"
+version = "0.3.1"
 authors = [{ "name" = "Ian Richard Ferguson", "email" = "IAN@ianferguson.dev" }]
 description = "Klondike is a suite of database connectors, powered by Polars"
 requires-python = "~=3.12.0"
