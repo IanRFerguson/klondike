@@ -39,6 +39,7 @@ dev = [
     "ruff~=0.4.0",
     "mypy~=1.9.0",           # Strict static type checking
     "pre-commit~=3.4.0",
+    "jupyter>=1.1.1",
 ]
 
 [tool.ruff]
